@@ -18,6 +18,12 @@ Next.js (App Router), TypeScript, Prisma (MySQL), NextAuth.js, Tailwind CSS を�
 - DBのカラム名はスネークケース (`user_id`)、コード内はキャメルケース (`userId`) を徹底する。
 
 --------------------------------------------------------------------------------
+### 共通UI基盤（フェーズ1と並行）
+- Shadcn/ui コンポーネントのインストール（button, card, badge, table, select, input）
+- サイドバーナビゲーション付き共通レイアウト（(app) ルートグループ）
+- 認証ページ専用レイアウト（中央寄せカード）
+
+--------------------------------------------------------------------------------
 フェーズ1：DB構築・認証・テスト基盤
 目的: データの箱を作り、特定ユーザーのみログインできるようにする。
 プロンプト:
@@ -49,6 +55,9 @@ Next.js (App Router), TypeScript, Prisma (MySQL), NextAuth.js, Tailwind CSS を�
 
 ### 4. テスト環境構築
 - **Vitest** をセットアップし、`npm run test` で実行できるようにしてください。
+
+### UI整備: ログイン・エラー画面（完了済み）
+- `/auth/signin`, `/auth/error` ページ実装済み（Shadcn/uiスタイル適用）
 
 --------------------------------------------------------------------------------
 フェーズ2-A：CSV取込機能（ロジック移植 & テスト）
@@ -89,6 +98,10 @@ export function getClensingDescription(description: string): string {
     ◦ "V123456 ENET ATM" という摘要が "ENET ATM" に整形され、typeが "transfer" になること。
     ◦ 通常の支出が "expense" になること。
 
+### UI整備: CSVインポート画面（完了済み）
+- サイドバー付き共通レイアウト（(app) ルートグループ）
+- Shadcn/ui コンポーネント（Button, Card, Badge, Table, Select, Input）を適用
+
 ---
 
 ### フェーズ2-B：レシート画像解析（非同期UX）
@@ -113,6 +126,9 @@ export function getClensingDescription(description: string): string {
 - `/transactions/new` にファイルアップロードUIを作成。
 - アップロードボタンを押したら、即座に「受付完了」を表示し、一覧画面へ遷移させる。
 
+### UI整備: レシートアップロード画面
+- `/transactions/new` のUI実装（Shadcn/ui）
+
 --------------------------------------------------------------------------------
 フェーズ3：精算（割り勘）機能
 目的: パートナーとの貸し借りを管理する。
@@ -130,6 +146,9 @@ export function getClensingDescription(description: string): string {
 
 ### 3. テスト
 - 未精算データのみが集計対象になるか、精算済み（日付入り）は除外されるかを検証するVitestコードを書いてください。
+
+### UI整備: 精算画面
+- `/settlement` のUI実装（未精算リスト、差額カード、精算確定ボタン）
 
 --------------------------------------------------------------------------------
 フェーズ4：可視化と拡張
@@ -150,3 +169,8 @@ export function getClensingDescription(description: string): string {
 - `LoanSchedule` テーブルから返済予定を読み込み、表示する。
 - 毎月の返済が終わったらチェックを入れると `status` が `paid` になるUI。
 - 「残債務（未払い分の合計）」を計算して表示する。
+
+### UI整備: ダッシュボード・明細・ローン管理画面
+- ダッシュボード（`/`）: 今月支出カード、カテゴリ別円グラフ（Recharts）
+- 明細一覧（`/transactions`）: フィルタ付きテーブル
+- ローン管理（`/loans`）: 返済予定テーブル、残債務表示
