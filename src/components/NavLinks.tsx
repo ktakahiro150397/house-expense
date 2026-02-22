@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 const links = [
   { label: "ホーム", icon: Home, href: "/", implemented: true },
   { label: "CSVインポート", icon: Upload, href: "/import", implemented: true },
-  { label: "明細一覧", icon: List, href: "/transactions", implemented: false },
+  { label: "明細一覧", icon: List, href: "/transactions", implemented: true },
   { label: "精算", icon: Wallet, href: "/settlement", implemented: false },
   { label: "ローン管理", icon: Building2, href: "/loans", implemented: false },
 ];

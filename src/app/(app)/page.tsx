@@ -31,7 +31,7 @@ const quickLinks = [
     description: "取り込んだ取引を確認・編集する",
     icon: List,
     href: "/transactions",
-    implemented: false,
+    implemented: true,
   },
   {
     label: "精算管理",
