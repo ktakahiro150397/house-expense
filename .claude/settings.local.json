@@ -15,7 +15,11 @@
       "Bash(git -C /mnt/c/Users/Takahiro/source/repos/house-expense status)",
       "Bash(git -C /mnt/c/Users/Takahiro/source/repos/house-expense log --oneline -5)",
       "Bash(mysql:*)",
-      "Bash(docker compose exec:*)"
+      "Bash(docker compose exec:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "WebFetch(domain:ui.shadcn.com)",
+      "Bash(npx shadcn add:*)"
     ]
   }
 }

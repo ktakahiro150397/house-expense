@@ -7,7 +7,7 @@ export default async function Sidebar() {
   const session = await auth();
 
   return (
-    <aside className="flex h-screen w-56 flex-col border-r bg-card">
+    <aside className="hidden md:flex h-screen w-56 flex-col border-r bg-card">
       {/* ロゴ */}
       <div className="flex h-14 items-center border-b px-4">
         <span className="text-lg font-bold tracking-tight">家計簿</span>

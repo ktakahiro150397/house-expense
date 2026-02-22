@@ -13,7 +13,7 @@ const links = [
   { label: "ローン管理", icon: Building2, href: "/loans", implemented: false },
 ];
 
-export default function NavLinks() {
+export default function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
@@ -35,6 +35,7 @@ export default function NavLinks() {
           <Link
             key={href}
             href={href}
+            onClick={onNavigate}
             className={cn(
               "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
               isActive
