@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   parsePreviewCsv,
   importTransactions,
@@ -197,10 +198,10 @@ export default function CsvUploadForm({ users, currentUserId }: Props) {
               </Card>
             )}
 
-          {/* トランザクション一覧（最大10件） */}
-          <div className="rounded-md border">
+          {/* トランザクション一覧（全件） */}
+          <div className="rounded-md border max-h-[60vh] overflow-y-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 bg-background">
                 <TableRow>
                   <TableHead>日付</TableHead>
                   <TableHead>説明</TableHead>
@@ -209,29 +210,22 @@ export default function CsvUploadForm({ users, currentUserId }: Props) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {preview.transactions.slice(0, 10).map((t, i) => (
+                {preview.transactions.map((t, i) => (
                   <TableRow key={i}>
                     <TableCell className="whitespace-nowrap">
                       {formatDate(t.usageDate)}
                     </TableCell>
-                    <TableCell className="truncate max-w-[180px]">
-                      {t.description}
-                    </TableCell>
+                    <TableCell>{t.description}</TableCell>
                     <TableCell className="whitespace-nowrap">
                       {TYPE_LABEL[t.type] ?? t.type}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right whitespace-nowrap">
                       {t.amount.toLocaleString()} 円
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-            {preview.transactions.length > 10 && (
-              <p className="text-xs text-muted-foreground px-4 py-2 border-t">
-                他 {preview.transactions.length - 10} 件...
-              </p>
-            )}
           </div>
 
           <div className="flex gap-3">
@@ -262,7 +256,7 @@ export default function CsvUploadForm({ users, currentUserId }: Props) {
           <div className="flex gap-3">
             <Button onClick={handleReset}>続けてインポート</Button>
             <Button variant="outline" asChild>
-              <a href="/">ホームへ戻る</a>
+              <Link href="/">ホームへ戻る</Link>
             </Button>
           </div>
         </div>

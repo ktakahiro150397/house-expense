@@ -29,7 +29,8 @@ export async function parsePreviewCsv(
   const file = formData.get("file") as File | null;
   if (!file) throw new Error("ファイルが見つかりません");
 
-  const content = await file.text();
+  const buffer = await file.arrayBuffer();
+  const content = new TextDecoder("shift-jis").decode(buffer);
   if (!content.trim()) throw new Error("ファイルが空です");
 
   const sourceType = detectSourceType(content);
