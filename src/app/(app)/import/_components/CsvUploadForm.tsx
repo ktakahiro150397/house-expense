@@ -33,9 +33,17 @@ type User = {
   email: string;
 };
 
+type DataSource = {
+  id: number;
+  name: string;
+  type: string;
+  institution: string | null;
+};
+
 type Props = {
   users: User[];
   currentUserId: number;
+  dataSources: DataSource[];
 };
 
 type Step = "upload" | "preview" | "done";
@@ -51,12 +59,13 @@ const TYPE_LABEL: Record<string, string> = {
   transfer: "振替",
 };
 
-export default function CsvUploadForm({ users, currentUserId }: Props) {
+export default function CsvUploadForm({ users, currentUserId, dataSources }: Props) {
   const [step, setStep] = useState<Step>("upload");
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [cardHolderUserMap, setCardHolderUserMap] = useState<
     Record<string, number>
   >({});
+  const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>("");
   const [result, setResult] = useState<ImportResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,6 +102,7 @@ export default function CsvUploadForm({ users, currentUserId }: Props) {
         transactions: preview.transactions,
         cardHolderUserMap,
         defaultUserId: currentUserId,
+        dataSourceId: selectedDataSourceId && selectedDataSourceId !== "none" ? Number(selectedDataSourceId) : undefined,
       });
       setResult(importResult);
       setStep("done");
@@ -107,6 +117,7 @@ export default function CsvUploadForm({ users, currentUserId }: Props) {
     setStep("upload");
     setPreview(null);
     setCardHolderUserMap({});
+    setSelectedDataSourceId("");
     setResult(null);
     setError(null);
   }
@@ -158,6 +169,30 @@ export default function CsvUploadForm({ users, currentUserId }: Props) {
               {formatDate(preview.dateRange.from)} 〜{" "}
               {formatDate(preview.dateRange.to)}
             </span>
+          </div>
+
+          {/* データソース選択 */}
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium whitespace-nowrap">
+              データソース:
+            </label>
+            <Select
+              value={selectedDataSourceId}
+              onValueChange={setSelectedDataSourceId}
+            >
+              <SelectTrigger className="w-56">
+                <SelectValue placeholder="未選択（なし）" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">未選択（なし）</SelectItem>
+                {dataSources.map((ds) => (
+                  <SelectItem key={ds.id} value={String(ds.id)}>
+                    {ds.name}
+                    {ds.institution ? ` (${ds.institution})` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Vpass で複数 cardHolder がいる場合のマッピング UI */}

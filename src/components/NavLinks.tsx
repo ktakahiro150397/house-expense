@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Upload, List, Wallet, Building2, Settings } from "lucide-react";
+import { Home, Upload, List, Wallet, Building2, Settings, Database } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -12,6 +12,7 @@ const links = [
   { label: "精算", icon: Wallet, href: "/settlement", implemented: true },
   { label: "ローン管理", icon: Building2, href: "/loans", implemented: true },
   { label: "カテゴリ管理", icon: Settings, href: "/settings/categories", implemented: true },
+  { label: "データソース管理", icon: Database, href: "/settings/data-sources", implemented: true },
 ];
 
 export default function NavLinks({ onNavigate }: { onNavigate?: () => void }) {

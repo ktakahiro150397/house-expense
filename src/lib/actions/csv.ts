@@ -61,6 +61,7 @@ export type ImportPayload = {
   transactions: ParsedTransaction[];
   cardHolderUserMap: Record<string, number>;
   defaultUserId: number;
+  dataSourceId?: number;
 };
 
 export type ImportResult = {
@@ -74,7 +75,7 @@ export async function importTransactions(
   const session = await auth();
   if (!session?.user) throw new Error("未認証です");
 
-  const { transactions, cardHolderUserMap, defaultUserId } = payload;
+  const { transactions, cardHolderUserMap, defaultUserId, dataSourceId } = payload;
 
   const data = transactions.map((t) => ({
     userId:
@@ -86,6 +87,7 @@ export async function importTransactions(
     description: t.description,
     type: t.type,
     hashKey: t.hashKey,
+    ...(dataSourceId !== undefined ? { dataSourceId } : {}),
   }));
 
   const result = await prisma.transaction.createMany({

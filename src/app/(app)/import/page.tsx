@@ -7,11 +7,15 @@ export default async function ImportPage() {
   const session = await auth();
   if (!session?.user?.email) redirect("/auth/signin");
 
-  const [users, dbUser] = await Promise.all([
+  const [users, dbUser, dataSources] = await Promise.all([
     prisma.user.findMany({ select: { id: true, name: true, email: true } }),
     prisma.user.findUnique({
       where: { email: session.user.email },
       select: { id: true },
+    }),
+    prisma.dataSource.findMany({
+      select: { id: true, name: true, type: true, institution: true },
+      orderBy: { createdAt: "asc" },
     }),
   ]);
 
@@ -25,7 +29,7 @@ export default async function ImportPage() {
           SMBC銀行明細 または Vpass明細 のCSVファイルを取り込みます
         </p>
       </div>
-      <CsvUploadForm users={users} currentUserId={dbUser.id} />
+      <CsvUploadForm users={users} currentUserId={dbUser.id} dataSources={dataSources} />
     </div>
   );
 }

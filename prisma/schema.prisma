@@ -52,6 +52,20 @@ model CategoryRule {
 }
 
 // ============================================================
+// DataSource: データソース（カード・口座）
+// ============================================================
+model DataSource {
+  id           Int           @id @default(autoincrement())
+  name         String        // "個人カード", "家族カード", "普通口座"
+  type         String        // "card" | "bank"
+  institution  String?       // "三井住友", "住信SBIネット銀行"
+  transactions Transaction[]
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  @@map("data_sources")
+}
+
+// ============================================================
 // Transaction: 家計簿明細（メインテーブル）
 // ============================================================
 model Transaction {
@@ -62,12 +76,14 @@ model Transaction {
   description    String        @db.Text
   type           String        // "expense" | "income" | "transfer"
   categoryId     Int?          @map("category_id")
+  dataSourceId   Int?          @map("data_source_id")
   isShared       Boolean       @default(false) @map("is_shared")
   settlementDate DateTime?     @map("settlement_date")
   hashKey          String        @unique @map("hash_key")
   receiptImageUrl  String?       @map("receipt_image_url")
   user             User          @relation(fields: [userId], references: [id])
   category         Category?     @relation(fields: [categoryId], references: [id])
+  dataSource       DataSource?   @relation(fields: [dataSourceId], references: [id])
   receiptItems     ReceiptItem[]
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
