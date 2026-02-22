@@ -44,7 +44,13 @@ export default async function TransactionsPage({
       ...(start && end ? { usageDate: { gte: start, lt: end } } : {}),
       ...(categoryId ? { categoryId: Number(categoryId) } : {}),
     },
-    include: { category: { select: { id: true, name: true } } },
+    include: {
+      category: { select: { id: true, name: true } },
+      receiptItems: {
+        select: { id: true, name: true, price: true, quantity: true },
+        orderBy: { id: "asc" },
+      },
+    },
     orderBy: { usageDate: "desc" },
   });
 

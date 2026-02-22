@@ -43,3 +43,5 @@ next-env.d.ts
 /src/generated/prisma
 
 docs/sample_csv
+
+public/uploads/

@@ -64,11 +64,12 @@ model Transaction {
   categoryId     Int?          @map("category_id")
   isShared       Boolean       @default(false) @map("is_shared")
   settlementDate DateTime?     @map("settlement_date")
-  hashKey        String        @unique @map("hash_key")
-  user           User          @relation(fields: [userId], references: [id])
-  category       Category?     @relation(fields: [categoryId], references: [id])
-  receiptItems   ReceiptItem[]
-  createdAt      DateTime      @default(now()) @map("created_at")
+  hashKey          String        @unique @map("hash_key")
+  receiptImageUrl  String?       @map("receipt_image_url")
+  user             User          @relation(fields: [userId], references: [id])
+  category         Category?     @relation(fields: [categoryId], references: [id])
+  receiptItems     ReceiptItem[]
+  createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
 
   @@map("transactions")
