@@ -30,6 +30,7 @@ model User {
 model Category {
   id           Int            @id @default(autoincrement())
   name         String
+  seq          Int            @default(0)
   rules        CategoryRule[]
   transactions Transaction[]
   createdAt    DateTime       @default(now()) @map("created_at")

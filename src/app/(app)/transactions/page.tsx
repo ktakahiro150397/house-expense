@@ -27,7 +27,7 @@ export default async function TransactionsPage({
   const selectedMonth = month ?? months[0];
 
   const categories = await prisma.category.findMany({
-    orderBy: { name: "asc" },
+    orderBy: { seq: "asc" },
     select: { id: true, name: true },
   });
 

@@ -71,7 +71,7 @@ export default async function HomePage() {
       where: { type: "expense", usageDate: { gte: start, lt: end } },
       _sum: { amount: true },
     }),
-    prisma.category.findMany({ select: { id: true, name: true } }),
+    prisma.category.findMany({ orderBy: { seq: "asc" }, select: { id: true, name: true } }),
   ]);
 
   const totalExpense = aggregateResult._sum.amount ?? 0;
