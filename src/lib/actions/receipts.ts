@@ -111,7 +111,7 @@ export async function updateReceiptItems(
 
 export async function assignProduct(
   receiptItemId: number,
-  input: { productMasterId: number } | { newName: string }
+  input: { productMasterId: number } | { newName: string; unit?: string }
 ): Promise<void> {
   const session = await auth();
   if (!session?.user) throw new Error('未認証');
@@ -131,10 +131,11 @@ export async function assignProduct(
     productMasterId = input.productMasterId;
   } else {
     // 新規 ProductMaster を作成（既存なら取得）
+    const unit = input.unit?.trim() || null;
     const master = await prisma.productMaster.upsert({
       where: { name: input.newName },
-      create: { name: input.newName },
-      update: {},
+      create: { name: input.newName, unit },
+      update: unit != null ? { unit } : {},
     });
     productMasterId = master.id;
   }
@@ -153,9 +154,9 @@ export async function assignProduct(
   });
 }
 
-export async function getProductMasters(): Promise<Array<{ id: number; name: string }>> {
+export async function getProductMasters(): Promise<Array<{ id: number; name: string; unit: string | null }>> {
   return prisma.productMaster.findMany({
-    select: { id: true, name: true },
+    select: { id: true, name: true, unit: true },
     orderBy: { name: 'asc' },
   });
 }

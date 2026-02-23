@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 export type ProductWithStats = {
   id: number;
   name: string;
+  unit: string | null;
   purchaseCount: number;
   latestUnitPrice: number | null;
   latestDate: Date | null;
@@ -51,6 +52,7 @@ export async function getProductsWithStats(): Promise<ProductWithStats[]> {
     return {
       id: master.id,
       name: master.name,
+      unit: master.unit,
       purchaseCount,
       latestUnitPrice,
       latestDate,
@@ -87,13 +89,26 @@ export async function getProductPriceHistory(
 }
 
 /**
- * ProductMaster の名前を取得する
+ * ProductMaster の名前・単位を取得する
  */
 export async function getProductMasterById(
   id: number
-): Promise<{ id: number; name: string } | null> {
+): Promise<{ id: number; name: string; unit: string | null } | null> {
   return prisma.productMaster.findUnique({
     where: { id },
-    select: { id: true, name: true },
+    select: { id: true, name: true, unit: true },
+  });
+}
+
+/**
+ * ProductMaster の単位を更新する
+ */
+export async function updateProductUnit(
+  productMasterId: number,
+  unit: string | null
+): Promise<void> {
+  await prisma.productMaster.update({
+    where: { id: productMasterId },
+    data: { unit: unit?.trim() || null },
   });
 }

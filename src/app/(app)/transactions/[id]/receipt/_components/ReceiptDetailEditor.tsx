@@ -49,7 +49,7 @@ type ItemRow = {
   productMasterId?: number | null;
 };
 
-type ProductMaster = { id: number; name: string };
+type ProductMaster = { id: number; name: string; unit: string | null };
 
 type Transaction = {
   id: number;
@@ -79,10 +79,11 @@ function ProductCombobox({
   currentProductMasterId: number | null | undefined;
   currentName: string;
   productMasters: ProductMaster[];
-  onAssigned: (productMasterId: number, masterName: string) => void;
+  onAssigned: (productMasterId: number, masterName: string, unit: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [newUnit, setNewUnit] = useState("");
   const [isPending, startTransition] = useTransition();
 
   const currentMaster = productMasters.find((m) => m.id === currentProductMasterId);
@@ -99,18 +100,20 @@ function ProductCombobox({
     setOpen(false);
     startTransition(async () => {
       await assignProduct(receiptItemId, { productMasterId: master.id });
-      onAssigned(master.id, master.name);
+      onAssigned(master.id, master.name, master.unit);
     });
   }
 
   function handleCreate() {
     if (!receiptItemId || !search.trim()) return;
     const newName = search.trim();
+    const unit = newUnit.trim() || undefined;
     setOpen(false);
     setSearch("");
+    setNewUnit("");
     startTransition(async () => {
-      await assignProduct(receiptItemId, { newName });
-      onAssigned(-1, newName);
+      await assignProduct(receiptItemId, { newName, unit });
+      onAssigned(-1, newName, unit ?? null);
     });
   }
 
@@ -133,7 +136,7 @@ function ProductCombobox({
             <Loader2 className="size-3 animate-spin" />
           ) : currentMaster ? (
             <Badge variant="secondary" className="text-xs font-normal px-1">
-              {currentMaster.name}
+              {currentMaster.name}{currentMaster.unit ? ` (${currentMaster.unit})` : ""}
             </Badge>
           ) : (
             <span className="text-muted-foreground truncate">品目を紐付け…</span>
@@ -141,7 +144,7 @@ function ProductCombobox({
           <ChevronsUpDown className="size-3 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-0" align="start">
+      <PopoverContent className="w-72 p-0" align="start">
         <Command>
           <CommandInput
             placeholder="商品名を検索…"
@@ -168,17 +171,33 @@ function ProductCombobox({
                           : "opacity-0"
                       }`}
                     />
-                    {master.name}
+                    <span>{master.name}</span>
+                    {master.unit && (
+                      <span className="ml-1 text-xs text-muted-foreground">({master.unit})</span>
+                    )}
                   </CommandItem>
                 ))}
               </CommandGroup>
             )}
             {showCreate && (
               <CommandGroup heading="新規登録">
-                <CommandItem onSelect={handleCreate} className="text-sm gap-2">
-                  <PackagePlus className="size-4" />
-                  <span>「{search.trim()}」を新規登録</span>
-                </CommandItem>
+                <div className="px-2 py-1.5 space-y-1.5">
+                  <p className="text-xs text-muted-foreground">「{search.trim()}」を新規登録</p>
+                  <Input
+                    value={newUnit}
+                    onChange={(e) => setNewUnit(e.target.value)}
+                    placeholder="単位（任意）例: kg, 個, 袋"
+                    className="h-7 text-xs"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <CommandItem
+                    onSelect={handleCreate}
+                    className="text-sm gap-2 justify-center"
+                  >
+                    <PackagePlus className="size-4" />
+                    <span>登録する</span>
+                  </CommandItem>
+                </div>
               </CommandGroup>
             )}
           </CommandList>
@@ -271,7 +290,8 @@ export default function ReceiptDetailEditor({
   function handleAssigned(
     index: number,
     productMasterId: number,
-    masterName: string
+    masterName: string,
+    unit: string | null
   ) {
     setRows((prev) => {
       const next = [...prev];
@@ -282,7 +302,7 @@ export default function ReceiptDetailEditor({
       router.refresh();
     } else if (!productMasters.find((m) => m.id === productMasterId)) {
       setProductMasters((prev) =>
-        [...prev, { id: productMasterId, name: masterName }].sort((a, b) =>
+        [...prev, { id: productMasterId, name: masterName, unit }].sort((a, b) =>
           a.name.localeCompare(b.name)
         )
       );
@@ -393,7 +413,7 @@ export default function ReceiptDetailEditor({
                 <TableHead>品目名</TableHead>
                 <TableHead>正規化商品</TableHead>
                 <TableHead className="text-right w-24">単価</TableHead>
-                <TableHead className="text-right w-20">数量</TableHead>
+                <TableHead className="text-right w-24">数量</TableHead>
                 <TableHead className="text-right w-24">小計</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
@@ -409,68 +429,79 @@ export default function ReceiptDetailEditor({
                   </TableCell>
                 </TableRow>
               )}
-              {rows.map((row, i) => (
-                <TableRow key={i}>
-                  <TableCell className="py-1 px-2">
-                    <Input
-                      value={row.name}
-                      onChange={(e) =>
-                        handleChange(i, "name", e.target.value)
-                      }
-                      className="h-8 text-sm min-w-[120px]"
-                      placeholder="品目名"
-                    />
-                  </TableCell>
-                  <TableCell className="py-1 px-2">
-                    <ProductCombobox
-                      receiptItemId={row.id}
-                      currentProductMasterId={row.productMasterId}
-                      currentName={row.name}
-                      productMasters={productMasters}
-                      onAssigned={(pid, mName) =>
-                        handleAssigned(i, pid, mName)
-                      }
-                    />
-                  </TableCell>
-                  <TableCell className="py-1 px-2">
-                    <Input
-                      type="number"
-                      value={row.price}
-                      onChange={(e) =>
-                        handleChange(i, "price", Number(e.target.value))
-                      }
-                      className="h-8 text-sm text-right w-24"
-                      min={0}
-                    />
-                  </TableCell>
-                  <TableCell className="py-1 px-2">
-                    <Input
-                      type="number"
-                      value={row.quantity}
-                      onChange={(e) =>
-                        handleChange(i, "quantity", Number(e.target.value))
-                      }
-                      className="h-8 text-sm text-right w-20"
-                      min={1}
-                    />
-                  </TableCell>
-                  <TableCell className="text-right text-sm font-mono py-1 px-2 whitespace-nowrap">
-                    ¥
-                    {(
-                      (Number(row.price) || 0) * (Number(row.quantity) || 0)
-                    ).toLocaleString()}
-                  </TableCell>
-                  <TableCell className="py-1 px-1">
-                    <button
-                      onClick={() => handleRemoveRow(i)}
-                      className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                      title="削除"
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {rows.map((row, i) => {
+                const master = productMasters.find((m) => m.id === row.productMasterId);
+                const unit = master?.unit ?? null;
+                return (
+                  <TableRow key={i}>
+                    <TableCell className="py-1 px-2">
+                      <Input
+                        value={row.name}
+                        onChange={(e) =>
+                          handleChange(i, "name", e.target.value)
+                        }
+                        className="h-8 text-sm min-w-[120px]"
+                        placeholder="品目名"
+                      />
+                    </TableCell>
+                    <TableCell className="py-1 px-2">
+                      <ProductCombobox
+                        receiptItemId={row.id}
+                        currentProductMasterId={row.productMasterId}
+                        currentName={row.name}
+                        productMasters={productMasters}
+                        onAssigned={(pid, mName, mUnit) =>
+                          handleAssigned(i, pid, mName, mUnit)
+                        }
+                      />
+                    </TableCell>
+                    <TableCell className="py-1 px-2">
+                      <Input
+                        type="number"
+                        value={row.price}
+                        onChange={(e) =>
+                          handleChange(i, "price", Number(e.target.value))
+                        }
+                        className="h-8 text-sm text-right w-24"
+                        min={0}
+                      />
+                    </TableCell>
+                    <TableCell className="py-1 px-2">
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="number"
+                          value={row.quantity}
+                          onChange={(e) =>
+                            handleChange(i, "quantity", Number(e.target.value))
+                          }
+                          className="h-8 text-sm text-right w-20"
+                          min={1}
+                        />
+                        {unit && (
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {unit}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right text-sm font-mono py-1 px-2 whitespace-nowrap">
+                      ¥
+                      {(
+                        (Number(row.price) || 0) * (Number(row.quantity) || 0)
+                      ).toLocaleString()}
+                    </TableCell>
+                    <TableCell className="py-1 px-1">
+                      <button
+                        onClick={() => handleRemoveRow(i)}
+                        className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                        title="削除"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
               <TableRow className="bg-muted/50 font-semibold">
                 <TableCell colSpan={4} className="py-2 px-2 text-sm">
                   合計

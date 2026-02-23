@@ -43,7 +43,8 @@ export default async function ItemsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>商品名</TableHead>
-                <TableHead className="text-right w-28">最新単価</TableHead>
+                <TableHead className="w-20">単位</TableHead>
+                <TableHead className="text-right w-32">最新単価</TableHead>
                 <TableHead className="text-right w-24">購入回数</TableHead>
                 <TableHead className="w-36">最終購入日</TableHead>
               </TableRow>
@@ -59,9 +60,12 @@ export default async function ItemsPage() {
                       {product.name}
                     </Link>
                   </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {product.unit ?? "—"}
+                  </TableCell>
                   <TableCell className="text-right font-mono text-sm">
                     {product.latestUnitPrice != null
-                      ? `¥${product.latestUnitPrice.toLocaleString()}`
+                      ? `¥${product.latestUnitPrice.toLocaleString()}${product.unit ? `/${product.unit}` : ""}`
                       : "—"}
                   </TableCell>
                   <TableCell className="text-right text-sm">

@@ -145,6 +145,7 @@ model LoanSchedule {
 model ProductMaster {
   id           Int                @id @default(autoincrement())
   name         String             @unique
+  unit         String?            // 例: "kg", "g", "本", "個", "袋", "枚"
   receiptItems ReceiptItem[]
   aliases      ProductNameAlias[]
   createdAt    DateTime           @default(now()) @map("created_at")

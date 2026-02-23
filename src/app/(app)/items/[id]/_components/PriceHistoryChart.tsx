@@ -12,7 +12,13 @@ import {
 
 type DataPoint = { date: string; unitPrice: number };
 
-export default function PriceHistoryChart({ data }: { data: DataPoint[] }) {
+export default function PriceHistoryChart({
+  data,
+  unit,
+}: {
+  data: DataPoint[];
+  unit?: string | null;
+}) {
   if (data.length < 2) {
     return (
       <div className="flex items-center justify-center h-[240px] text-sm text-muted-foreground">
@@ -20,6 +26,9 @@ export default function PriceHistoryChart({ data }: { data: DataPoint[] }) {
       </div>
     );
   }
+
+  const unitLabel = unit ? `/${unit}` : "";
+
   return (
     <ResponsiveContainer width="100%" height={240}>
       <LineChart data={data} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
@@ -33,7 +42,10 @@ export default function PriceHistoryChart({ data }: { data: DataPoint[] }) {
           width={72}
         />
         <Tooltip
-          formatter={(value) => [`¥${(value ?? 0).toLocaleString()}`, "単価"]}
+          formatter={(value) => [
+            `¥${(value ?? 0).toLocaleString()}${unitLabel}`,
+            "単価",
+          ]}
           labelFormatter={(label) => `購入日: ${label}`}
           contentStyle={{ fontSize: 12 }}
         />
