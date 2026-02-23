@@ -28,6 +28,12 @@ export async function toggleTransactionShared(
   });
 }
 
+export async function deleteTransaction(id: number): Promise<void> {
+  const session = await auth();
+  if (!session?.user) throw new Error("未認証");
+  await prisma.transaction.delete({ where: { id } });
+}
+
 export async function addCategoryRule(
   categoryId: number,
   keyword: string

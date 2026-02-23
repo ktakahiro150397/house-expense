@@ -20,12 +20,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Camera } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Receipt, Trash2 } from "lucide-react";
 import {
   updateTransactionCategory,
   toggleTransactionShared,
+  deleteTransaction,
 } from "@/lib/actions/transactions";
-import ReceiptUploadDialog from "./ReceiptUploadDialog";
 
 type TransactionWithCategory = {
   id: number;
@@ -77,7 +85,11 @@ export default function TransactionTable({ transactions, categories }: Props) {
       update:
         | { type: "category"; description: string; categoryId: number | null }
         | { type: "shared"; id: number; isShared: boolean }
+        | { type: "delete"; id: number }
     ) => {
+      if (update.type === "delete") {
+        return state.filter((t) => t.id !== update.id);
+      }
       return state.map((t) => {
         if (update.type === "category") {
           if (t.description !== update.description) return t;
@@ -93,11 +105,7 @@ export default function TransactionTable({ transactions, categories }: Props) {
     }
   );
 
-  const [receiptDialog, setReceiptDialog] = useState<{
-    transactionId: number;
-    description: string;
-    imageUrl: string | null;
-  } | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   function handleCategoryChange(description: string, categoryId: number | null) {
     startTransition(async () => {
@@ -115,6 +123,15 @@ export default function TransactionTable({ transactions, categories }: Props) {
     });
   }
 
+  function handleDelete(id: number) {
+    startTransition(async () => {
+      updateOptimistic({ type: "delete", id });
+      await deleteTransaction(id);
+      router.refresh();
+    });
+    setDeleteConfirmId(null);
+  }
+
   return (
     <>
       <div className="rounded-md border overflow-x-auto">
@@ -129,13 +146,14 @@ export default function TransactionTable({ transactions, categories }: Props) {
               <TableHead className="text-right whitespace-nowrap">金額</TableHead>
               <TableHead className="text-center whitespace-nowrap">共有</TableHead>
               <TableHead className="text-center whitespace-nowrap">レシート</TableHead>
+              <TableHead className="text-center whitespace-nowrap">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {optimisticTxns.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={9}
                   className="text-center text-muted-foreground py-8"
                 >
                   明細がありません
@@ -194,35 +212,30 @@ export default function TransactionTable({ transactions, categories }: Props) {
                   />
                 </TableCell>
                 <TableCell className="text-center">
-                  {t.receiptItems.length > 0 ? (
-                    <Link
-                      href={`/transactions/${t.id}/receipt`}
-                      className="inline-flex items-center justify-center rounded p-1 hover:bg-muted transition-colors"
-                      title="レシート解析結果を確認・編集"
-                    >
-                      <Camera className="size-4 text-green-600" />
-                    </Link>
-                  ) : (
-                    <button
-                      onClick={() =>
-                        setReceiptDialog({
-                          transactionId: t.id,
-                          description: t.description,
-                          imageUrl: t.receiptImageUrl,
-                        })
-                      }
-                      className="inline-flex items-center justify-center rounded p-1 hover:bg-muted transition-colors"
-                      title="レシート画像"
-                    >
-                      <Camera
-                        className={`size-4 ${
-                          t.receiptImageUrl
-                            ? "text-yellow-500"
-                            : "text-muted-foreground"
-                        }`}
-                      />
-                    </button>
-                  )}
+                  <Link
+                    href={`/transactions/${t.id}/receipt`}
+                    className="inline-flex items-center justify-center rounded p-1 hover:bg-muted transition-colors"
+                    title="レシート詳細を確認・編集"
+                  >
+                    <Receipt
+                      className={`size-4 ${
+                        t.receiptItems.length > 0
+                          ? "text-green-600"
+                          : t.receiptImageUrl
+                          ? "text-yellow-500"
+                          : "text-muted-foreground"
+                      }`}
+                    />
+                  </Link>
+                </TableCell>
+                <TableCell className="text-center">
+                  <button
+                    onClick={() => setDeleteConfirmId(t.id)}
+                    className="inline-flex items-center justify-center rounded p-1 hover:bg-muted transition-colors"
+                    title="明細を削除"
+                  >
+                    <Trash2 className="size-4 text-muted-foreground hover:text-destructive" />
+                  </button>
                 </TableCell>
               </TableRow>
             ))}
@@ -230,21 +243,32 @@ export default function TransactionTable({ transactions, categories }: Props) {
         </Table>
       </div>
 
-      {receiptDialog && (
-        <ReceiptUploadDialog
-          open={true}
-          onOpenChange={(open) => {
-            if (!open) setReceiptDialog(null);
-          }}
-          transactionId={receiptDialog.transactionId}
-          description={receiptDialog.description}
-          initialImageUrl={receiptDialog.imageUrl}
-          onComplete={() => {
-            setReceiptDialog(null);
-            router.refresh();
-          }}
-        />
-      )}
+      <Dialog
+        open={deleteConfirmId !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteConfirmId(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>明細を削除</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            この明細を削除しますか？この操作は取り消せません。
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
+              キャンセル
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteConfirmId !== null && handleDelete(deleteConfirmId)}
+            >
+              削除する
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
