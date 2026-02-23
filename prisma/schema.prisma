@@ -95,13 +95,15 @@ model Transaction {
 // ReceiptItem: レシート明細（Transactionの子テーブル）
 // ============================================================
 model ReceiptItem {
-  id            Int         @id @default(autoincrement())
-  transactionId Int         @map("transaction_id")
-  name          String
-  price         Int
-  quantity      Int         @default(1)
-  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-  createdAt     DateTime    @default(now()) @map("created_at")
+  id              Int            @id @default(autoincrement())
+  transactionId   Int            @map("transaction_id")
+  name            String
+  price           Int
+  quantity        Int            @default(1)
+  productMasterId Int?           @map("product_master_id")
+  transaction     Transaction    @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  productMaster   ProductMaster? @relation(fields: [productMasterId], references: [id])
+  createdAt       DateTime       @default(now()) @map("created_at")
 
   @@map("receipt_items")
 }
@@ -135,4 +137,28 @@ model LoanSchedule {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("loan_schedules")
+}
+
+// ============================================================
+// ProductMaster: 商品マスタ（品目正規化）
+// ============================================================
+model ProductMaster {
+  id           Int                @id @default(autoincrement())
+  name         String             @unique
+  receiptItems ReceiptItem[]
+  aliases      ProductNameAlias[]
+  createdAt    DateTime           @default(now()) @map("created_at")
+
+  @@map("product_masters")
+}
+
+// ============================================================
+// ProductNameAlias: 商品名エイリアス（rawName → ProductMaster）
+// ============================================================
+model ProductNameAlias {
+  rawName         String        @id @map("raw_name")
+  productMasterId Int           @map("product_master_id")
+  productMaster   ProductMaster @relation(fields: [productMasterId], references: [id], onDelete: Cascade)
+
+  @@map("product_name_aliases")
 }

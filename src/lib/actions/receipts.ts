@@ -65,6 +65,17 @@ export async function analyzeReceipt(
   const localPath = path.join(process.cwd(), "public", transaction.receiptImageUrl);
   const result = await analyzeReceiptImage(localPath);
 
+  // alias 検索して productMasterId を自動セット
+  const aliasMap = new Map();
+  for (const item of result.items) {
+    if (!aliasMap.has(item.name)) {
+      const alias = await prisma.productNameAlias.findUnique({
+        where: { rawName: item.name },
+      });
+      aliasMap.set(item.name, alias?.productMasterId ?? null);
+    }
+  }
+
   await prisma.$transaction([
     prisma.receiptItem.deleteMany({ where: { transactionId } }),
     prisma.receiptItem.createMany({
@@ -73,6 +84,7 @@ export async function analyzeReceipt(
         name: item.name,
         price: item.price,
         quantity: item.quantity,
+        productMasterId: aliasMap.get(item.name) ?? null,
       })),
     }),
   ]);
@@ -95,4 +107,55 @@ export async function updateReceiptItems(
       data: filtered.map((item) => ({ transactionId, ...item })),
     }),
   ]);
+}
+
+export async function assignProduct(
+  receiptItemId: number,
+  input: { productMasterId: number } | { newName: string }
+): Promise<void> {
+  const session = await auth();
+  if (!session?.user) throw new Error('未認証');
+
+  // 対象 ReceiptItem を取得（rawName として使用）
+  const receiptItem = await prisma.receiptItem.findUnique({
+    where: { id: receiptItemId },
+    select: { name: true },
+  });
+  if (!receiptItem) throw new Error('品目が見つかりません');
+
+  const rawName = receiptItem.name;
+
+  let productMasterId: number;
+
+  if ('productMasterId' in input) {
+    productMasterId = input.productMasterId;
+  } else {
+    // 新規 ProductMaster を作成（既存なら取得）
+    const master = await prisma.productMaster.upsert({
+      where: { name: input.newName },
+      create: { name: input.newName },
+      update: {},
+    });
+    productMasterId = master.id;
+  }
+
+  // ProductNameAlias を upsert
+  await prisma.productNameAlias.upsert({
+    where: { rawName },
+    create: { rawName, productMasterId },
+    update: { productMasterId },
+  });
+
+  // 同じ rawName を持つ全 ReceiptItem に自動適用（batch update）
+  await prisma.receiptItem.updateMany({
+    where: { name: rawName },
+    data: { productMasterId },
+  });
+}
+
+export async function getProductMasters(): Promise<Array<{ id: number; name: string }>> {
+  return prisma.productMaster.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+  });
 }

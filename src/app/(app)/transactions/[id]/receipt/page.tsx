@@ -4,6 +4,7 @@ import { ChevronLeft } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ReceiptDetailEditor from "./_components/ReceiptDetailEditor";
+import { getProductMasters } from "@/lib/actions/receipts";
 
 export default async function ReceiptPage({
   params,
@@ -28,7 +29,7 @@ export default async function ReceiptPage({
       type: true,
       receiptImageUrl: true,
       receiptItems: {
-        select: { id: true, name: true, price: true, quantity: true },
+        select: { id: true, name: true, price: true, quantity: true, productMasterId: true },
         orderBy: { id: "asc" },
       },
     },
@@ -36,7 +37,11 @@ export default async function ReceiptPage({
 
   if (!transaction) notFound();
 
-  const usageDate = new Date(transaction.usageDate);
+  const [usageDate2, productMasters] = await Promise.all([
+    Promise.resolve(new Date(transaction.usageDate)),
+    getProductMasters(),
+  ]);
+  const usageDate = usageDate2;
   const dateStr = `${usageDate.getFullYear()}/${String(usageDate.getMonth() + 1).padStart(2, "0")}/${String(usageDate.getDate()).padStart(2, "0")}`;
 
   return (
@@ -58,7 +63,7 @@ export default async function ReceiptPage({
         </span>
       </div>
 
-      <ReceiptDetailEditor transaction={transaction} />
+      <ReceiptDetailEditor transaction={transaction} productMasters={productMasters} />
     </div>
   );
 }
