@@ -7,20 +7,38 @@ import {
   callAdviceFunction,
   type AdviceFunctionName,
 } from "@/lib/gemini-advice";
+import type { Content } from "@google/generative-ai";
+
+export type ChatMessage = {
+  role: "user" | "assistant";
+  text: string;
+};
 
 export type AdviceResult = {
   answer: string;
   error?: string;
 };
 
-const SYSTEM_PROMPT = `あなたは家計管理の専門アドバイザーです。
-ユーザーの家計データを分析し、わかりやすく日本語で回答してください。
-金額は「円」単位で表示し、必要に応じて比較・分析・節約アドバイスを提供してください。
-データが取得できた場合は、具体的な数値を示しながら回答してください。
+const SYSTEM_PROMPT = `あなたは公認ファイナンシャルプランナー（CFP）の資格を持つ家計管理の専門アドバイザーです。
+ユーザーの家計データを詳しく分析し、専門的かつわかりやすい日本語で回答してください。
+
+【回答スタイル】
+- 必ずMarkdown形式で回答すること（見出し・箇条書き・太字・表を積極活用）
+- 金額は「円」単位、3桁カンマ表記（例: 12,500円）
+- 前月比・前年比などの増減率（%）を具体的に示すこと
+- 表面的な集計にとどまらず、パターン・傾向・異常値を積極的に指摘すること
+
+【データ取得指針】
+- 比較分析が有効な場面では自発的に過去月のデータも取得して比較すること
+- 収支を見る際は収入データ（getIncomeExpenseSummary）も取得すること
+- ローン・未精算共有費がある場合は積極的に言及すること
+- 商品の価格履歴がある場合はトレンドに言及すること
+
 今日の日付: ${new Date().toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" })}`;
 
 export async function requestAdvice(
   question: string,
+  history: ChatMessage[],
   dataSourceIds?: number[]
 ): Promise<AdviceResult> {
   const session = await auth();
@@ -59,7 +77,13 @@ export async function requestAdvice(
         : "";
     const fullQuestion = question + contextNote;
 
-    const chat = model.startChat();
+    // 過去の会話履歴を Gemini の Content 形式に変換
+    const geminiHistory: Content[] = history.map((msg) => ({
+      role: msg.role === "user" ? "user" : "model",
+      parts: [{ text: msg.text }],
+    }));
+
+    const chat = model.startChat({ history: geminiHistory });
     let response = await chat.sendMessage(fullQuestion);
 
     // Function Calling ループ（最大 5 回）
