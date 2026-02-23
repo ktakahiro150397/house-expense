@@ -11,6 +11,7 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN DATABASE_URL=mysql://dummy:dummy@localhost:3306/dummy npx prisma generate
 RUN npm run build
 
 # --- runner: minimal production image ---
