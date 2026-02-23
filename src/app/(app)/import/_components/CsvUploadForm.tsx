@@ -7,6 +7,7 @@ import {
   importTransactions,
 } from "@/lib/actions/csv";
 import type { PreviewResult, ImportResult } from "@/lib/actions/csv";
+import type { TransactionType } from "@/lib/parsers/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -53,11 +54,6 @@ function formatDate(d: Date | string): string {
   return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
 }
 
-const TYPE_LABEL: Record<string, string> = {
-  expense: "支出",
-  income: "収入",
-  transfer: "振替",
-};
 
 export default function CsvUploadForm({ users, currentUserId, dataSources }: Props) {
   const [step, setStep] = useState<Step>("upload");
@@ -67,8 +63,16 @@ export default function CsvUploadForm({ users, currentUserId, dataSources }: Pro
   >({});
   const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>("");
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [typeOverrides, setTypeOverrides] = useState<Record<string, TransactionType>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function getOverrideKey(index: number, hashKey: string) {
+    return `${index}:${hashKey}`;
+  }
+  function handleTypeOverride(index: number, hashKey: string, newType: TransactionType) {
+    setTypeOverrides((prev) => ({ ...prev, [getOverrideKey(index, hashKey)]: newType }));
+  }
 
   async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -98,8 +102,12 @@ export default function CsvUploadForm({ users, currentUserId, dataSources }: Pro
     setError(null);
     setIsLoading(true);
     try {
+      const mergedTransactions = preview.transactions.map((t, i) => ({
+        ...t,
+        type: typeOverrides[getOverrideKey(i, t.hashKey)] ?? t.type,
+      }));
       const importResult = await importTransactions({
-        transactions: preview.transactions,
+        transactions: mergedTransactions,
         cardHolderUserMap,
         defaultUserId: currentUserId,
         dataSourceId: selectedDataSourceId && selectedDataSourceId !== "none" ? Number(selectedDataSourceId) : undefined,
@@ -118,6 +126,7 @@ export default function CsvUploadForm({ users, currentUserId, dataSources }: Pro
     setPreview(null);
     setCardHolderUserMap({});
     setSelectedDataSourceId("");
+    setTypeOverrides({});
     setResult(null);
     setError(null);
   }
@@ -245,20 +254,37 @@ export default function CsvUploadForm({ users, currentUserId, dataSources }: Pro
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {preview.transactions.map((t, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="whitespace-nowrap">
-                      {formatDate(t.usageDate)}
-                    </TableCell>
-                    <TableCell>{t.description}</TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      {TYPE_LABEL[t.type] ?? t.type}
-                    </TableCell>
-                    <TableCell className="text-right whitespace-nowrap">
-                      {t.amount.toLocaleString()} 円
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {preview.transactions.map((t, i) => {
+                  const overrideKey = getOverrideKey(i, t.hashKey);
+                  const isOverridden = overrideKey in typeOverrides;
+                  const currentType = typeOverrides[overrideKey] ?? t.type;
+                  return (
+                    <TableRow key={i}>
+                      <TableCell className="whitespace-nowrap">
+                        {formatDate(t.usageDate)}
+                      </TableCell>
+                      <TableCell>{t.description}</TableCell>
+                      <TableCell className={isOverridden ? "bg-amber-50" : ""}>
+                        <Select
+                          value={currentType}
+                          onValueChange={(v) => handleTypeOverride(i, t.hashKey, v as TransactionType)}
+                        >
+                          <SelectTrigger className="h-7 w-20">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="expense">支出</SelectItem>
+                            <SelectItem value="income">収入</SelectItem>
+                            <SelectItem value="transfer">振替</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        {t.amount.toLocaleString()} 円
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

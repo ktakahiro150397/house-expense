@@ -3,7 +3,15 @@ import { generateHashKey } from "@/lib/hash";
 import { getClensingDescription } from "@/lib/parsers/cleansing";
 import type { ParsedTransaction, TransactionParser, TransactionType } from "@/lib/parsers/types";
 
+const DEFAULT_TRANSFER_KEYWORDS = ["ENET", "カード", "ﾐﾂｲｽﾐﾄﾓｶ-ﾄﾞ"];
+
 export class SmbcBankParser implements TransactionParser {
+  private readonly transferKeywords: string[];
+
+  constructor(options?: { transferKeywords?: string[] }) {
+    this.transferKeywords = options?.transferKeywords ?? DEFAULT_TRANSFER_KEYWORDS;
+  }
+
   parse(content: string): ParsedTransaction[] {
     const result = Papa.parse<string[]>(content, {
       skipEmptyLines: true,
@@ -46,12 +54,7 @@ export class SmbcBankParser implements TransactionParser {
       let type: TransactionType;
       if (deposit) {
         type = "income";
-      } else if (
-        rawDescription.includes("ENET") ||
-        rawDescription.includes("カード")
-      ) {
-        type = "transfer";
-      } else if (rawDescription.includes("ﾐﾂｲｽﾐﾄﾓｶ-ﾄﾞ")) {
+      } else if (this.transferKeywords.some((kw) => rawDescription.includes(kw))) {
         type = "transfer";
       } else {
         type = "expense";
