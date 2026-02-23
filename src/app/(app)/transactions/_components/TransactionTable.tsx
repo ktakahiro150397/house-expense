@@ -36,6 +36,7 @@ type TransactionWithCategory = {
   isShared: boolean;
   receiptImageUrl: string | null;
   category: { id: number; name: string } | null;
+  dataSource: { id: number; name: string } | null;
   receiptItems: Array<{ id: number; name: string; price: number; quantity: number }>;
 };
 
@@ -122,6 +123,7 @@ export default function TransactionTable({ transactions, categories }: Props) {
             <TableRow>
               <TableHead className="whitespace-nowrap">日付</TableHead>
               <TableHead>説明</TableHead>
+              <TableHead className="whitespace-nowrap">データソース</TableHead>
               <TableHead className="whitespace-nowrap">種別</TableHead>
               <TableHead className="whitespace-nowrap">カテゴリ</TableHead>
               <TableHead className="text-right whitespace-nowrap">金額</TableHead>
@@ -133,7 +135,7 @@ export default function TransactionTable({ transactions, categories }: Props) {
             {optimisticTxns.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="text-center text-muted-foreground py-8"
                 >
                   明細がありません
@@ -147,6 +149,9 @@ export default function TransactionTable({ transactions, categories }: Props) {
                 </TableCell>
                 <TableCell className="max-w-[200px] truncate text-sm">
                   {t.description}
+                </TableCell>
+                <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                  {t.dataSource?.name ?? "—"}
                 </TableCell>
                 <TableCell>
                   <Badge variant={TYPE_VARIANT[t.type] ?? "outline"}>

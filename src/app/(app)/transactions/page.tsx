@@ -8,12 +8,20 @@ import TransactionTable from "./_components/TransactionTable";
 export default async function TransactionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string; categoryId?: string }>;
+  searchParams: Promise<{
+    monthFrom?: string;
+    monthTo?: string;
+    categoryIds?: string;
+    type?: string;
+    dataSourceId?: string;
+    isShared?: string;
+  }>;
 }) {
   const session = await auth();
   if (!session?.user) redirect("/auth/signin");
 
-  const { month, categoryId } = await searchParams;
+  const { monthFrom, monthTo, categoryIds, type, dataSourceId, isShared } =
+    await searchParams;
 
   const allDates = await prisma.transaction.findMany({
     select: { usageDate: true },
@@ -24,35 +32,72 @@ export default async function TransactionsPage({
     ...new Set(allDates.map((d) => d.usageDate.toISOString().slice(0, 7))),
   ];
 
-  const selectedMonth = month ?? months[0];
+  const defaultMonth = months[0] ?? "";
+  const resolvedFrom = monthFrom ?? defaultMonth;
+  const resolvedTo =
+    monthTo && monthTo >= resolvedFrom ? monthTo : resolvedFrom;
 
-  const categories = await prisma.category.findMany({
-    orderBy: { seq: "asc" },
-    select: { id: true, name: true },
-  });
+  const categoryIdList = categoryIds
+    ? categoryIds
+        .split(",")
+        .map(Number)
+        .filter((n) => !isNaN(n) && n >= 0)
+    : [];
+  const includeUncategorized = categoryIdList.includes(0);
+  const realCategoryIds = categoryIdList.filter((n) => n > 0);
+
+  const parsedDataSourceId =
+    dataSourceId && !isNaN(Number(dataSourceId)) && Number(dataSourceId) > 0
+      ? Number(dataSourceId)
+      : undefined;
 
   let start: Date | undefined;
   let end: Date | undefined;
-  if (selectedMonth) {
-    const [y, m] = selectedMonth.split("-").map(Number);
-    start = new Date(y, m - 1, 1);
-    end = new Date(y, m, 1);
+  if (resolvedFrom) {
+    const [fy, fm] = resolvedFrom.split("-").map(Number);
+    start = new Date(fy, fm - 1, 1);
+
+    const [ty, tm] = resolvedTo.split("-").map(Number);
+    end = new Date(ty, tm, 1);
   }
 
-  const transactions = await prisma.transaction.findMany({
-    where: {
-      ...(start && end ? { usageDate: { gte: start, lt: end } } : {}),
-      ...(categoryId ? { categoryId: Number(categoryId) } : {}),
-    },
-    include: {
-      category: { select: { id: true, name: true } },
-      receiptItems: {
-        select: { id: true, name: true, price: true, quantity: true },
-        orderBy: { id: "asc" },
+  const [transactions, categories, dataSources] = await Promise.all([
+    prisma.transaction.findMany({
+      where: {
+        ...(start && end ? { usageDate: { gte: start, lt: end } } : {}),
+        ...(categoryIdList.length > 0
+          ? {
+              OR: [
+                ...(realCategoryIds.length > 0
+                  ? [{ categoryId: { in: realCategoryIds } }]
+                  : []),
+                ...(includeUncategorized ? [{ categoryId: null }] : []),
+              ],
+            }
+          : {}),
+        ...(type ? { type } : {}),
+        ...(parsedDataSourceId ? { dataSourceId: parsedDataSourceId } : {}),
+        ...(isShared === "1" ? { isShared: true } : {}),
       },
-    },
-    orderBy: { usageDate: "desc" },
-  });
+      include: {
+        category: { select: { id: true, name: true } },
+        dataSource: { select: { id: true, name: true } },
+        receiptItems: {
+          select: { id: true, name: true, price: true, quantity: true },
+          orderBy: { id: "asc" },
+        },
+      },
+      orderBy: { usageDate: "desc" },
+    }),
+    prisma.category.findMany({
+      orderBy: { seq: "asc" },
+      select: { id: true, name: true },
+    }),
+    prisma.dataSource.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   return (
     <div className="space-y-4">
@@ -65,9 +110,14 @@ export default async function TransactionsPage({
       <Suspense>
         <TransactionFilters
           months={months}
-          selectedMonth={selectedMonth ?? ""}
+          monthFrom={resolvedFrom}
+          monthTo={resolvedTo}
           categories={categories}
-          selectedCategoryId={categoryId ?? ""}
+          selectedCategoryIds={categoryIdList}
+          selectedType={type ?? ""}
+          dataSources={dataSources}
+          selectedDataSourceId={dataSourceId ?? ""}
+          isSharedFilter={isShared === "1"}
         />
       </Suspense>
       <TransactionTable transactions={transactions} categories={categories} />
