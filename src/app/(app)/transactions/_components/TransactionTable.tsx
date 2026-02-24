@@ -132,9 +132,99 @@ export default function TransactionTable({ transactions, categories }: Props) {
     setDeleteConfirmId(null);
   }
 
-  return (
-    <>
-      <div className="rounded-md border overflow-x-auto">
+      {/* モバイル: カード形式 */}
+      <div className="md:hidden space-y-2">
+        {optimisticTxns.length === 0 && (
+          <p className="text-center text-muted-foreground py-8">明細がありません</p>
+        )}
+        {optimisticTxns.map((t) => (
+          <div key={t.id} className="rounded-lg border bg-card p-3 space-y-2">
+            {/* 上段: 日付・種別バッジ・金額 */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {formatDate(t.usageDate)}
+                </span>
+                <Badge variant={TYPE_VARIANT[t.type] ?? "outline"} className="text-xs shrink-0">
+                  {TYPE_LABEL[t.type] ?? t.type}
+                </Badge>
+              </div>
+              <span className="font-mono font-semibold whitespace-nowrap text-sm shrink-0">
+                {t.type === "expense" ? (
+                  <span className="text-destructive">-¥{Math.abs(t.amount).toLocaleString()}</span>
+                ) : (
+                  <span className="text-green-600">¥{Math.abs(t.amount).toLocaleString()}</span>
+                )}
+              </span>
+            </div>
+
+            {/* 説明 */}
+            <p className="text-sm font-medium truncate">{t.description}</p>
+
+            {/* カテゴリ選択 */}
+            <Select
+              value={t.category ? String(t.category.id) : "none"}
+              onValueChange={(val) =>
+                handleCategoryChange(t.description, val === "none" ? null : Number(val))
+              }
+            >
+              <SelectTrigger className="h-8 text-sm w-full">
+                <SelectValue placeholder="未分類" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">未分類</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c.id} value={String(c.id)}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* 下段: データソース・共有・レシート・削除 */}
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-muted-foreground truncate">
+                {t.dataSource?.name ?? "—"}
+              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1">
+                  <Switch
+                    checked={t.isShared}
+                    onCheckedChange={(checked) => handleSharedChange(t.id, checked)}
+                    className="scale-90"
+                  />
+                  <span className="text-xs text-muted-foreground">共有</span>
+                </div>
+                <Link
+                  href={`/transactions/${t.id}/receipt`}
+                  className="inline-flex items-center justify-center rounded p-1.5 hover:bg-muted transition-colors"
+                  title="レシート詳細"
+                >
+                  <Receipt
+                    className={`size-4 ${
+                      t.receiptItems.length > 0
+                        ? "text-green-600"
+                        : t.receiptImageUrl
+                        ? "text-yellow-500"
+                        : "text-muted-foreground"
+                    }`}
+                  />
+                </Link>
+                <button
+                  onClick={() => setDeleteConfirmId(t.id)}
+                  className="inline-flex items-center justify-center rounded p-1.5 hover:bg-muted transition-colors"
+                  title="削除"
+                >
+                  <Trash2 className="size-4 text-muted-foreground" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* PC: テーブル形式 */}
+      <div className="hidden md:block rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

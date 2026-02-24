@@ -22,7 +22,7 @@ export default function SharedExpenseSummary({ sharedAmount, personalAmount }: P
           </p>
           <p className="text-xs text-muted-foreground">支出全体の {sharedRate}%</p>
         </div>
-        <div className="grid grid-cols-2 gap-2 text-sm border-t pt-2">
+        <div className="grid grid-cols-2 gap-4 text-sm border-t pt-2">
           <div>
             <p className="text-xs text-muted-foreground">共有費</p>
             <p className="font-medium">¥{sharedAmount.toLocaleString("ja-JP")}</p>
