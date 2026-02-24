@@ -114,8 +114,8 @@ export default function DataSourceManager({
   return (
     <div className="space-y-6">
       {/* 追加フォーム */}
-      <div className="flex gap-2 items-end">
-        <div className="flex-1">
+      <div className="flex flex-col gap-2 sm:grid sm:grid-cols-2 lg:flex lg:flex-row lg:items-end">
+        <div className="sm:col-span-1">
           <label className="text-sm font-medium mb-1 block">名前</label>
           <Input
             placeholder="例: 個人カード"
@@ -125,10 +125,10 @@ export default function DataSourceManager({
             disabled={isPending}
           />
         </div>
-        <div className="w-36">
+        <div className="sm:col-span-1">
           <label className="text-sm font-medium mb-1 block">種別</label>
           <Select value={newType} onValueChange={setNewType} disabled={isPending}>
-            <SelectTrigger>
+            <SelectTrigger className="w-full lg:w-36">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -140,7 +140,7 @@ export default function DataSourceManager({
             </SelectContent>
           </Select>
         </div>
-        <div className="w-44">
+        <div className="sm:col-span-1">
           <label className="text-sm font-medium mb-1 block">発行元（任意）</label>
           <Input
             placeholder="例: 三井住友"
@@ -148,16 +148,144 @@ export default function DataSourceManager({
             onChange={(e) => setNewInstitution(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleCreate()}
             disabled={isPending}
+            className="w-full lg:w-44"
           />
         </div>
-        <Button onClick={handleCreate} disabled={isPending || !newName.trim()}>
+        <Button
+          onClick={handleCreate}
+          disabled={isPending || !newName.trim()}
+          className="w-full sm:col-span-1 lg:w-auto"
+        >
           <Plus className="h-4 w-4 mr-1" />
           追加
         </Button>
       </div>
 
-      {/* データソース一覧テーブル */}
-      <div className="rounded-md border overflow-x-auto">
+      {/* モバイル: カード形式 */}
+      <div className="md:hidden space-y-2">
+        {dataSources.length === 0 && (
+          <p className="text-center text-muted-foreground py-8">
+            データソースがありません
+          </p>
+        )}
+        {dataSources.map((ds) => (
+          <div key={ds.id} className="rounded-lg border bg-card p-3 space-y-2">
+            {editingId === ds.id ? (
+              <>
+                <div className="space-y-2">
+                  <Input
+                    className="h-8 text-sm"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleUpdate(ds.id);
+                      if (e.key === "Escape") cancelEdit();
+                    }}
+                    disabled={isPending}
+                    autoFocus
+                    placeholder="名前"
+                  />
+                  <div className="flex gap-2">
+                    <Select
+                      value={editType}
+                      onValueChange={setEditType}
+                      disabled={isPending}
+                    >
+                      <SelectTrigger className="h-8 flex-1 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TYPE_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      className="h-8 flex-1 text-sm"
+                      value={editInstitution}
+                      onChange={(e) => setEditInstitution(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleUpdate(ds.id);
+                        if (e.key === "Escape") cancelEdit();
+                      }}
+                      placeholder="発行元（任意）"
+                      disabled={isPending}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-green-600 hover:text-green-700"
+                    onClick={() => handleUpdate(ds.id)}
+                    disabled={isPending}
+                  >
+                    <Check className="h-4 w-4 mr-1" />
+                    保存
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={cancelEdit}
+                    disabled={isPending}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    キャンセル
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium">{ds.name}</span>
+                    <TypeBadge type={ds.type} />
+                  </div>
+                  {ds.institution && (
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      {ds.institution}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    明細 {ds._count.transactions} 件
+                  </p>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    onClick={() => startEdit(ds)}
+                    disabled={isPending}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    onClick={() => handleDelete(ds.id, ds.name)}
+                    disabled={isPending || ds._count.transactions > 0}
+                    title={
+                      ds._count.transactions > 0
+                        ? "明細が存在するため削除できません"
+                        : "削除"
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* デスクトップ: テーブル形式 */}
+      <div className="hidden md:block rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
