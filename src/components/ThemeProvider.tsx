@@ -1,6 +1,7 @@
 "use client";
 
 import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { AccentColorProvider } from "./AccentColorProvider";
 
 export default function ThemeProvider({
   children,
@@ -9,7 +10,7 @@ export default function ThemeProvider({
 }) {
   return (
     <NextThemesProvider attribute="class" defaultTheme="system" enableSystem>
-      {children}
+      <AccentColorProvider>{children}</AccentColorProvider>
     </NextThemesProvider>
   );
 }

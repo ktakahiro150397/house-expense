@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useAccentColor } from "@/components/AccentColorProvider";
 
 export type MonthExpense = {
   label: string;   // "12月", "1月" など
@@ -22,6 +23,7 @@ type Props = {
 
 export default function MonthlyExpenseSummary({ monthLabel, recentMonths }: Props) {
   const currentAmount = recentMonths.find((m) => m.isCurrent)?.amount ?? 0;
+  const { accentColor } = useAccentColor();
 
   return (
     <Card className="h-full flex flex-col">
@@ -52,7 +54,7 @@ export default function MonthlyExpenseSummary({ monthLabel, recentMonths }: Prop
             />
             <Bar dataKey="amount" radius={[3, 3, 0, 0]}>
               {recentMonths.map((m, i) => (
-                <Cell key={i} fill={m.isCurrent ? "#e8722a" : "#d1d5db"} />
+                <Cell key={i} fill={m.isCurrent ? accentColor : "#d1d5db"} />
               ))}
             </Bar>
           </BarChart>

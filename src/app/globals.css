@@ -122,3 +122,23 @@
     @apply bg-background text-foreground;
     }
 }
+/* ---- アクセントカラーテーマ ---- */
+:root {
+  --app-accent: #e8722a;
+  --app-accent-subtle: #e8722a20;
+}
+
+html[data-accent="blue"] {
+  --app-accent: #2563eb;
+  --app-accent-subtle: #2563eb20;
+}
+
+html[data-accent="green"] {
+  --app-accent: #16a34a;
+  --app-accent-subtle: #16a34a20;
+}
+
+html[data-accent="purple"] {
+  --app-accent: #9333ea;
+  --app-accent-subtle: #9333ea20;
+}
