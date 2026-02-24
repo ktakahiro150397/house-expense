@@ -13,7 +13,10 @@ export default function UnsettledAmountCard({ unsettledAmount }: Props) {
         <CardTitle className="text-base">精算待ちの共有費</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <p className={`text-2xl font-bold ${unsettledAmount > 0 ? "text-orange-500" : "text-muted-foreground"}`}>
+        <p
+          className={`text-2xl font-bold ${unsettledAmount === 0 ? "text-muted-foreground" : ""}`}
+          style={unsettledAmount > 0 ? { color: "var(--app-accent)" } : undefined}
+        >
           ¥{unsettledAmount.toLocaleString("ja-JP")}
         </p>
         <Link

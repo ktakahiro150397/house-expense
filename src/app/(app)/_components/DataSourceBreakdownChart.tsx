@@ -10,14 +10,18 @@ import {
   Cell,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAccentColor } from "@/components/AccentColorProvider";
 
-const CHART_COLORS = ["#e8722a", "#2aa4a4", "#3a5a7a", "#c9a832", "#c47a1a"];
+const BASE_COLORS = ["#2aa4a4", "#3a5a7a", "#c9a832", "#c47a1a"];
 
 type Props = {
   data: { name: string; amount: number }[];
 };
 
 export default function DataSourceBreakdownChart({ data }: Props) {
+  const { accentColor } = useAccentColor();
+  const CHART_COLORS = [accentColor, ...BASE_COLORS];
+
   if (data.length === 0) {
     return (
       <Card>
