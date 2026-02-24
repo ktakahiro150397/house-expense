@@ -102,7 +102,7 @@ export default function CategoryManager({
   return (
     <div className="space-y-6">
       {/* 追加フォーム */}
-      <div className="flex gap-2 items-end">
+      <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
         <div className="flex-1">
           <label className="text-sm font-medium mb-1 block">カテゴリ名</label>
           <Input
@@ -113,7 +113,7 @@ export default function CategoryManager({
             disabled={isPending}
           />
         </div>
-        <div className="w-24">
+        <div className="w-full sm:w-24">
           <label className="text-sm font-medium mb-1 block">順番</label>
           <Input
             type="number"
@@ -123,14 +123,142 @@ export default function CategoryManager({
             disabled={isPending}
           />
         </div>
-        <Button onClick={handleCreate} disabled={isPending || !newName.trim()}>
+        <Button
+          onClick={handleCreate}
+          disabled={isPending || !newName.trim()}
+          className="w-full sm:w-auto"
+        >
           <Plus className="h-4 w-4 mr-1" />
           追加
         </Button>
       </div>
 
-      {/* カテゴリ一覧テーブル */}
-      <div className="rounded-md border overflow-x-auto">
+      {/* モバイル: カード形式 */}
+      <div className="md:hidden space-y-2">
+        {categories.length === 0 && (
+          <p className="text-center text-muted-foreground py-8">
+            カテゴリがありません
+          </p>
+        )}
+        {categories.map((cat) => (
+          <div key={cat.id} className="rounded-lg border bg-card p-3 space-y-2">
+            {editingId === cat.id ? (
+              <>
+                <div className="flex gap-2">
+                  <Input
+                    className="flex-1 h-8 text-sm"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleUpdate(cat.id);
+                      if (e.key === "Escape") cancelEdit();
+                    }}
+                    disabled={isPending}
+                    autoFocus
+                    placeholder="カテゴリ名"
+                  />
+                  <Input
+                    type="number"
+                    className="w-16 h-8 text-sm text-center"
+                    value={editSeq}
+                    onChange={(e) => setEditSeq(e.target.value)}
+                    disabled={isPending}
+                    placeholder="順番"
+                  />
+                </div>
+                <div className="flex justify-end gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-green-600 hover:text-green-700"
+                    onClick={() => handleUpdate(cat.id)}
+                    disabled={isPending}
+                  >
+                    <Check className="h-4 w-4 mr-1" />
+                    保存
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={cancelEdit}
+                    disabled={isPending}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    キャンセル
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{cat.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      #{cat.seq}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {cat.rules.map((rule) => (
+                      <Badge
+                        key={rule.id}
+                        variant="secondary"
+                        className="gap-1 pr-1"
+                      >
+                        {rule.keyword}
+                        <button
+                          onClick={() =>
+                            handleDeleteRule(rule.id, rule.keyword)
+                          }
+                          disabled={isPending}
+                          className="hover:text-destructive disabled:opacity-50"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                    {cat.rules.length === 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        ルールなし
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    明細 {cat._count.transactions} 件
+                  </p>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    onClick={() => startEdit(cat)}
+                    disabled={isPending}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    onClick={() => handleDelete(cat.id, cat.name)}
+                    disabled={isPending || cat._count.transactions > 0}
+                    title={
+                      cat._count.transactions > 0
+                        ? "明細が存在するため削除できません"
+                        : "削除"
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* デスクトップ: テーブル形式 */}
+      <div className="hidden md:block rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

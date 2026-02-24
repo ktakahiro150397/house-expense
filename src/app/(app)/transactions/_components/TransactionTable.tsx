@@ -132,6 +132,8 @@ export default function TransactionTable({ transactions, categories }: Props) {
     setDeleteConfirmId(null);
   }
 
+  return (
+    <>
       {/* モバイル: カード形式 */}
       <div className="md:hidden space-y-2">
         {optimisticTxns.length === 0 && (
