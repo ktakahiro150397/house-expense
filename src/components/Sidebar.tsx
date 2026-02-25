@@ -1,12 +1,14 @@
 import { auth, signOut } from "@/lib/auth";
+import { isAdminEmail } from "@/lib/admin";
 import NavLinks from "./NavLinks";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
-import AccentColorPicker from "./AccentColorPicker";
+import CharacterThemePicker from "./CharacterThemePicker";
 
 export default async function Sidebar() {
   const session = await auth();
+  const isAdmin = isAdminEmail(session?.user?.email);
 
   return (
     <aside className="hidden md:flex h-screen w-56 flex-col border-r bg-card">
@@ -16,7 +18,7 @@ export default async function Sidebar() {
       </div>
 
       {/* ナビリンク */}
-      <NavLinks />
+      <NavLinks isAdmin={isAdmin} />
 
       {/* 外観設定・ユーザー情報 */}
       <div className="border-t p-3 space-y-3">
@@ -27,8 +29,8 @@ export default async function Sidebar() {
             <ThemeToggle />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground mb-1.5">カラー</p>
-            <AccentColorPicker />
+            <p className="text-xs text-muted-foreground mb-1.5">テーマ</p>
+            <CharacterThemePicker />
           </div>
         </div>
 
