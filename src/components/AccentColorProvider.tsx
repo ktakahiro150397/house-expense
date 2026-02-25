@@ -1,57 +1,76 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import {
+  CHARACTER_THEMES,
+  DEFAULT_THEME_ID,
+  type CharacterTheme,
+} from "@/lib/themes";
 
-export type AccentColor = "orange" | "blue" | "green" | "purple";
+const STORAGE_KEY = "app-character-theme";
 
-export const ACCENTS: { id: AccentColor; label: string; color: string }[] = [
-  { id: "orange", label: "オレンジ", color: "#e8722a" },
-  { id: "blue",   label: "ブルー",   color: "#2563eb" },
-  { id: "green",  label: "グリーン", color: "#16a34a" },
-  { id: "purple", label: "パープル", color: "#9333ea" },
-];
-
-const STORAGE_KEY = "app-accent-color";
-
-type AccentContextValue = {
-  accent: AccentColor;
-  setAccent: (accent: AccentColor) => void;
+type ThemeContextValue = {
+  themeId: string;
+  setTheme: (id: string) => void;
+  theme: CharacterTheme;
+  /** @deprecated useCharacterTheme().theme.accentColor を使ってください */
   accentColor: string;
 };
 
-const AccentContext = createContext<AccentContextValue>({
-  accent: "orange",
-  setAccent: () => {},
-  accentColor: "#e8722a",
+const defaultTheme = CHARACTER_THEMES.find((t) => t.id === DEFAULT_THEME_ID)!;
+
+const ThemeContext = createContext<ThemeContextValue>({
+  themeId: DEFAULT_THEME_ID,
+  setTheme: () => {},
+  theme: defaultTheme,
+  accentColor: defaultTheme.accentColor,
 });
 
-export function AccentColorProvider({ children }: { children: React.ReactNode }) {
-  const [accent, setAccentState] = useState<AccentColor>("orange");
+export function AccentColorProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [themeId, setThemeIdState] = useState(DEFAULT_THEME_ID);
 
   // localStorage から読み込み（マウント後）
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as AccentColor | null;
-    if (stored && ACCENTS.find((a) => a.id === stored)) {
-      setAccentState(stored);
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored && CHARACTER_THEMES.find((t) => t.id === stored)) {
+      setThemeIdState(stored);
     }
   }, []);
 
-  // data-accent 属性と localStorage を同期
+  // data-character-theme 属性と localStorage を同期
   useEffect(() => {
-    document.documentElement.setAttribute("data-accent", accent);
-    localStorage.setItem(STORAGE_KEY, accent);
-  }, [accent]);
+    document.documentElement.setAttribute("data-character-theme", themeId);
+    localStorage.setItem(STORAGE_KEY, themeId);
+  }, [themeId]);
 
-  const setAccent = (a: AccentColor) => setAccentState(a);
-  const accentColor = ACCENTS.find((a) => a.id === accent)?.color ?? "#e8722a";
+  const setTheme = (id: string) => {
+    if (CHARACTER_THEMES.find((t) => t.id === id)) {
+      setThemeIdState(id);
+    }
+  };
+
+  const theme = CHARACTER_THEMES.find((t) => t.id === themeId) ?? defaultTheme;
 
   return (
-    <AccentContext.Provider value={{ accent, setAccent, accentColor }}>
+    <ThemeContext.Provider
+      value={{ themeId, setTheme, theme, accentColor: theme.accentColor }}
+    >
       {children}
-    </AccentContext.Provider>
+    </ThemeContext.Provider>
   );
 }
 
+/** チャートなど既存コンポーネント向け互換フック */
 export function useAccentColor() {
-  return useContext(AccentContext);
+  const { accentColor } = useContext(ThemeContext);
+  return { accentColor };
+}
+
+/** キャラクターテーマ全体を参照するフック */
+export function useCharacterTheme() {
+  return useContext(ThemeContext);
 }

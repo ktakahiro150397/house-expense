@@ -2,6 +2,7 @@
 
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { AccentColorProvider } from "./AccentColorProvider";
+import CharacterOverlay from "./CharacterOverlay";
 
 export default function ThemeProvider({
   children,
@@ -10,7 +11,10 @@ export default function ThemeProvider({
 }) {
   return (
     <NextThemesProvider attribute="class" defaultTheme="system" enableSystem>
-      <AccentColorProvider>{children}</AccentColorProvider>
+      <AccentColorProvider>
+        {children}
+        <CharacterOverlay />
+      </AccentColorProvider>
     </NextThemesProvider>
   );
 }

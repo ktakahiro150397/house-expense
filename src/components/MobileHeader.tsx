@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import NavLinks from "@/components/NavLinks";
 import ThemeToggle from "@/components/ThemeToggle";
-import AccentColorPicker from "@/components/AccentColorPicker";
+import CharacterThemePicker from "@/components/CharacterThemePicker";
 
-export default function MobileHeader() {
+export default function MobileHeader({ isAdmin = false }: { isAdmin?: boolean }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -26,7 +26,7 @@ export default function MobileHeader() {
           <SheetHeader className="flex h-14 flex-row items-center border-b px-4">
             <SheetTitle className="text-lg font-bold tracking-tight">家計簿</SheetTitle>
           </SheetHeader>
-          <NavLinks onNavigate={() => setOpen(false)} />
+          <NavLinks onNavigate={() => setOpen(false)} isAdmin={isAdmin} />
           {/* 外観設定（ドロワー内フッター） */}
           <div className="border-t p-3 space-y-2 mt-auto">
             <div>
@@ -34,8 +34,8 @@ export default function MobileHeader() {
               <ThemeToggle />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground mb-1.5">カラー</p>
-              <AccentColorPicker />
+              <p className="text-xs text-muted-foreground mb-1.5">テーマ</p>
+              <CharacterThemePicker />
             </div>
           </div>
         </SheetContent>
