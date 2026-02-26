@@ -31,6 +31,17 @@ services:
     volumes:
       - uploads:/app/public/uploads
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: house-expense-cloudflared
+    profiles:
+      - tunnel
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TUNNEL_TOKEN}
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_started
+
 volumes:
   db_data:
   uploads:
