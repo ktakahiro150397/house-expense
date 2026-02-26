@@ -6,10 +6,15 @@ import remarkGfm from "remark-gfm";
 import { requestAdvice, type ChatMessage } from "@/lib/actions/advice";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Loader2, Send, Bot, User, RotateCcw } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Loader2, Send, Bot, User, RotateCcw, Settings } from "lucide-react";
 
 type DataSource = {
   id: number;
@@ -96,6 +101,7 @@ export default function AdviceChat({
   const [selectedDataSourceIds, setSelectedDataSourceIds] = useState<number[]>(
     []
   );
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -162,16 +168,155 @@ export default function AdviceChat({
   const allSelected = selectedDataSourceIds.length === dataSources.length;
 
   return (
-    <div className="space-y-4">
-      {/* データソースフィルタ */}
-      {dataSources.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              対象データソース（未選択時は全対象）
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-4">
+    <div className="flex flex-col h-full">
+      {/* ヘッダー */}
+      <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
+        <div className="flex items-center gap-2">
+          <Bot className="h-5 w-5 text-primary" />
+          <h1 className="text-base font-semibold">AI アドバイス</h1>
+        </div>
+        <div className="flex gap-1">
+          {dataSources.length > 0 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSettingsOpen(true)}
+              title="データソース設定"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleReset}
+            disabled={messages.length === 0 || isPending}
+            title="会話をリセット"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* メッセージエリア */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4">
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+            <Bot className="h-8 w-8 mb-2 opacity-40" />
+            <p className="text-sm">
+              質問を入力するか、プリセットを選んでください
+            </p>
+          </div>
+        ) : (
+          messages.map((msg, i) => (
+            <div
+              key={i}
+              className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              {msg.role === "assistant" && (
+                <div className="flex-shrink-0 mt-1">
+                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Bot className="h-4 w-4 text-primary" />
+                  </div>
+                </div>
+              )}
+              <div
+                className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
+                  msg.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
+                }`}
+              >
+                {msg.role === "assistant" ? (
+                  <MarkdownContent text={msg.text} />
+                ) : (
+                  <p className="whitespace-pre-wrap">{msg.text}</p>
+                )}
+              </div>
+              {msg.role === "user" && (
+                <div className="flex-shrink-0 mt-1">
+                  <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+
+        {/* ローディングインジケータ */}
+        {isPending && (
+          <div className="flex justify-start gap-2">
+            <div className="flex-shrink-0 mt-1">
+              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                <Bot className="h-4 w-4 text-primary" />
+              </div>
+            </div>
+            <div className="bg-muted rounded-lg px-3 py-2">
+              <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span>分析中...</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div ref={bottomRef} />
+      </div>
+
+      {/* 底部固定エリア */}
+      <div className="shrink-0 border-t px-4 py-3 space-y-2">
+        {/* プリセットチップ */}
+        <div className="flex flex-wrap gap-1.5">
+          {PRESET_QUESTIONS.map((q) => (
+            <button
+              key={q}
+              onClick={() => handlePreset(q)}
+              disabled={isPending}
+              className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+        {/* 入力行 */}
+        <div className="flex gap-2 items-end">
+          <Textarea
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="家計についての質問を入力してください"
+            rows={2}
+            disabled={isPending}
+            className="flex-1 resize-none"
+          />
+          <Button
+            onClick={handleSubmit}
+            size="icon"
+            disabled={!inputText.trim() || isPending}
+          >
+            {isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground text-right">
+          Ctrl+Enter で送信
+        </p>
+      </div>
+
+      {/* 設定 Dialog */}
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>対象データソース</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            未選択時は全データソースが対象になります
+          </p>
+          <div className="space-y-3 pt-2">
             <div className="flex items-center gap-2">
               <Checkbox
                 id="all-sources"
@@ -202,141 +347,9 @@ export default function AdviceChat({
                 </Label>
               </div>
             ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* プリセット質問 */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            よくある質問
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          {PRESET_QUESTIONS.map((q) => (
-            <Button
-              key={q}
-              variant="outline"
-              size="sm"
-              onClick={() => handlePreset(q)}
-              className="text-sm"
-            >
-              {q}
-            </Button>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* チャット履歴エリア */}
-      <Card>
-        <CardContent className="pt-4">
-          <div className="max-h-[60vh] overflow-y-auto space-y-4 mb-4 min-h-[120px]">
-            {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-[120px] text-muted-foreground">
-                <Bot className="h-8 w-8 mb-2 opacity-40" />
-                <p className="text-sm">
-                  質問を入力するか、上のプリセットを選んでください
-                </p>
-              </div>
-            ) : (
-              messages.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  {msg.role === "assistant" && (
-                    <div className="flex-shrink-0 mt-1">
-                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Bot className="h-4 w-4 text-primary" />
-                      </div>
-                    </div>
-                  )}
-                  <div
-                    className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
-                      msg.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    }`}
-                  >
-                    {msg.role === "assistant" ? (
-                      <MarkdownContent text={msg.text} />
-                    ) : (
-                      <p className="whitespace-pre-wrap">{msg.text}</p>
-                    )}
-                  </div>
-                  {msg.role === "user" && (
-                    <div className="flex-shrink-0 mt-1">
-                      <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-
-            {/* ローディングインジケータ */}
-            {isPending && (
-              <div className="flex justify-start gap-2">
-                <div className="flex-shrink-0 mt-1">
-                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Bot className="h-4 w-4 text-primary" />
-                  </div>
-                </div>
-                <div className="bg-muted rounded-lg px-3 py-2">
-                  <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    <span>分析中...</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div ref={bottomRef} />
           </div>
-
-          {/* 入力エリア */}
-          <div className="space-y-2 border-t pt-3">
-            <Textarea
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="家計についての質問を入力してください（Ctrl+Enter で送信）"
-              rows={3}
-              disabled={isPending}
-            />
-            <div className="flex justify-between items-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleReset}
-                disabled={messages.length === 0 || isPending}
-                className="text-muted-foreground"
-              >
-                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                会話をリセット
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={!inputText.trim() || isPending}
-              >
-                {isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    分析中...
-                  </>
-                ) : (
-                  <>
-                    <Send className="mr-2 h-4 w-4" />
-                    送信
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

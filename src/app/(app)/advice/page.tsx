@@ -12,8 +12,7 @@ export default async function AdvicePage() {
   });
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">AI アドバイス</h1>
+    <div className="h-full flex flex-col -m-4 md:-m-8">
       <AdviceChat dataSources={dataSources} />
     </div>
   );
