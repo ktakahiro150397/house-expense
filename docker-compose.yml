@@ -2,6 +2,8 @@ services:
   db:
     image: mysql:8.4
     container_name: house-expense-db
+    ports:
+      - "3011:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
       MYSQL_DATABASE: house_expense
