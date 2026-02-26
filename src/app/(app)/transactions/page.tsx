@@ -100,14 +100,31 @@ export default async function TransactionsPage({
     }),
   ]);
 
+  const totalExpense = transactions
+    .filter((t) => t.type === "expense")
+    .reduce((sum, t) => sum + t.amount, 0);
+  const totalIncome = transactions
+    .filter((t) => t.type === "income")
+    .reduce((sum, t) => sum + t.amount, 0);
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">明細一覧</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm text-muted-foreground">
             {transactions.length} 件
           </span>
+          {totalExpense > 0 && (
+            <span className="text-sm font-medium text-destructive">
+              支出合計: ¥{totalExpense.toLocaleString()}
+            </span>
+          )}
+          {totalIncome > 0 && (
+            <span className="text-sm font-medium text-green-600">
+              収入合計: ¥{totalIncome.toLocaleString()}
+            </span>
+          )}
           <Suspense>
             <CsvDownloadButton />
           </Suspense>

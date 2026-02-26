@@ -49,6 +49,9 @@ export default function TransactionFilters({
   const searchParams = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // monthFrom 以降の月のみ monthTo の選択肢に表示する
+  const availableToMonths = months.filter((m) => m >= monthFrom);
+
   const activeFilterCount =
     (selectedCategoryIds.length > 0 ? 1 : 0) +
     (selectedType ? 1 : 0) +
@@ -68,10 +71,11 @@ export default function TransactionFilters({
   }
 
   function handleMonthFromChange(val: string) {
-    const updates: Record<string, string | null> = { monthFrom: val };
-    if (monthTo < val) {
-      updates.monthTo = val;
-    }
+    // monthTo を常にURLに含めることで、サーバー側でのリセットを防ぐ
+    const updates: Record<string, string | null> = {
+      monthFrom: val,
+      monthTo: monthTo < val ? val : monthTo,
+    };
     pushParams(updates);
   }
 
@@ -128,7 +132,7 @@ export default function TransactionFilters({
             <SelectValue placeholder="終了月" />
           </SelectTrigger>
           <SelectContent>
-            {months.map((m) => (
+            {availableToMonths.map((m) => (
               <SelectItem key={m} value={m}>
                 {m}
               </SelectItem>
@@ -272,7 +276,7 @@ export default function TransactionFilters({
                     <SelectValue placeholder="終了月" />
                   </SelectTrigger>
                   <SelectContent>
-                    {months.map((m) => (
+                    {availableToMonths.map((m) => (
                       <SelectItem key={m} value={m}>{m}</SelectItem>
                     ))}
                   </SelectContent>

@@ -170,7 +170,7 @@ export default function TransactionTable({ transactions, categories }: Props) {
                 handleCategoryChange(t.description, val === "none" ? null : Number(val))
               }
             >
-              <SelectTrigger className="h-8 text-sm w-full">
+              <SelectTrigger className={`h-8 text-sm w-full ${t.category === null ? "border-amber-400" : ""}`}>
                 <SelectValue placeholder="未分類" />
               </SelectTrigger>
               <SelectContent>
@@ -278,7 +278,7 @@ export default function TransactionTable({ transactions, categories }: Props) {
                       )
                     }
                   >
-                    <SelectTrigger className="w-36 h-8 text-sm">
+                    <SelectTrigger className={`w-36 h-8 text-sm ${t.category === null ? "border-amber-400" : ""}`}>
                       <SelectValue placeholder="未分類" />
                     </SelectTrigger>
                     <SelectContent>
