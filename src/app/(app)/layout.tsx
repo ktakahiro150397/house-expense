@@ -12,10 +12,10 @@ export default async function AppLayout({
   const isAdmin = isAdminEmail(session?.user?.email);
 
   return (
-    <div className="flex h-screen flex-col md:flex-row">
+    <div className="flex h-dvh flex-col md:flex-row overflow-hidden">
       <Sidebar />
       <MobileHeader isAdmin={isAdmin} />
-      <main className="flex-1 overflow-y-auto p-4 md:p-8">{children}</main>
+      <main className="flex-1 min-h-0 overflow-y-auto overscroll-none p-4 md:p-8">{children}</main>
     </div>
   );
 }

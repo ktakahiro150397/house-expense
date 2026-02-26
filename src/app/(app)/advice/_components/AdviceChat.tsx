@@ -103,10 +103,15 @@ export default function AdviceChat({
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const messageAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messageAreaRef.current) {
+      messageAreaRef.current.scrollTo({
+        top: messageAreaRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
   }, [messages, isPending]);
 
   function toggleDataSource(id: number) {
@@ -199,7 +204,7 @@ export default function AdviceChat({
       </div>
 
       {/* メッセージエリア */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4">
+      <div ref={messageAreaRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
             <Bot className="h-8 w-8 mb-2 opacity-40" />
@@ -261,7 +266,6 @@ export default function AdviceChat({
           </div>
         )}
 
-        <div ref={bottomRef} />
       </div>
 
       {/* 底部固定エリア */}
