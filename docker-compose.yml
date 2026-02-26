@@ -7,14 +7,12 @@ services:
       MYSQL_DATABASE: house_expense
       MYSQL_USER: appuser
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-apppassword}
-    ports:
-      - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --mysql-native-password=ON
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-password}"]
-      interval: 10s
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-password}" ]
+      start_period: 90s
       timeout: 5s
       retries: 5
 
@@ -22,7 +20,7 @@ services:
     build: .
     container_name: house-expense-app
     ports:
-      - "3000:3000"
+      - "3010:3000"
     env_file:
       - .env.production
     depends_on:
