@@ -19,7 +19,13 @@
       "Bash(ls:*)",
       "Bash(cat:*)",
       "WebFetch(domain:ui.shadcn.com)",
-      "Bash(npx shadcn add:*)"
+      "Bash(npx shadcn add:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git:*)",
+      "Bash(tail:*)",
+      "Bash(test:*)",
+      "Bash(docker ps:*)"
     ]
   }
 }

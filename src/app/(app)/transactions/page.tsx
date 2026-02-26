@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import TransactionFilters from "./_components/TransactionFilters";
 import TransactionTable from "./_components/TransactionTable";
+import CsvDownloadButton from "./_components/CsvDownloadButton";
 
 export default async function TransactionsPage({
   searchParams,
@@ -103,9 +104,14 @@ export default async function TransactionsPage({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">明細一覧</h1>
-        <span className="text-sm text-muted-foreground">
-          {transactions.length} 件
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">
+            {transactions.length} 件
+          </span>
+          <Suspense>
+            <CsvDownloadButton />
+          </Suspense>
+        </div>
       </div>
       <Suspense>
         <TransactionFilters

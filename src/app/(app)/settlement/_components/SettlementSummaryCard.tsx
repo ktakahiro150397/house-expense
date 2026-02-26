@@ -16,7 +16,7 @@ export default function SettlementSummaryCard({ result, userNames }: Props) {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* ユーザー別合計 */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {Array.from(userTotals.entries()).map(([userId, total]) => (
             <div key={userId} className="rounded-lg border p-4 text-center">
               <p className="text-sm text-muted-foreground mb-1">
@@ -34,31 +34,33 @@ export default function SettlementSummaryCard({ result, userNames }: Props) {
               精算済みです（差額なし）
             </p>
           ) : morePayerUserId && lessPayerUserId ? (
-            <p className="text-lg font-bold">
-              <span className="text-primary">
-                {userNames.get(lessPayerUserId) ?? `ユーザー${lessPayerUserId}`}
-              </span>
-              　が
-              <span className="text-primary">
-                {userNames.get(morePayerUserId) ?? `ユーザー${morePayerUserId}`}
-              </span>
-              　に
-              <span className="text-2xl text-red-600">
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">支払い先</p>
+              <p className="text-base font-bold leading-relaxed">
+                <span className="text-primary">
+                  {userNames.get(lessPayerUserId) ?? `ユーザー${lessPayerUserId}`}
+                </span>
+                {" → "}
+                <span className="text-primary">
+                  {userNames.get(morePayerUserId) ?? `ユーザー${morePayerUserId}`}
+                </span>
+              </p>
+              <p className="text-2xl font-bold text-red-600">
                 ¥{Math.floor(difference).toLocaleString()}
-              </span>
-              　支払う
-            </p>
+              </p>
+            </div>
           ) : morePayerUserId ? (
-            <p className="text-lg font-bold">
-              <span className="text-primary">
-                {userNames.get(morePayerUserId) ?? `ユーザー${morePayerUserId}`}
-              </span>
-              　が全額負担しています（差額:
-              <span className="text-red-600">
-                ¥{Math.floor(difference).toLocaleString()}
-              </span>
-              ）
-            </p>
+            <div className="space-y-1">
+              <p className="text-base font-bold">
+                <span className="text-primary">
+                  {userNames.get(morePayerUserId) ?? `ユーザー${morePayerUserId}`}
+                </span>
+                が全額負担
+              </p>
+              <p className="text-red-600 font-semibold">
+                差額: ¥{Math.floor(difference).toLocaleString()}
+              </p>
+            </div>
           ) : null}
         </div>
       </CardContent>

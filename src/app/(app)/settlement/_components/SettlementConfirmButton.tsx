@@ -20,12 +20,12 @@ export default function SettlementConfirmButton() {
   }
 
   return (
-    <div className="flex justify-end">
+    <div className="flex justify-center sm:justify-end">
       <Button
         onClick={handleClick}
         disabled={isPending}
         size="lg"
-        className="min-w-40"
+        className="w-full sm:w-auto sm:min-w-40"
       >
         {isPending ? "処理中..." : "精算を確定する"}
       </Button>

@@ -5,6 +5,7 @@ import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import NavLinks from "@/components/NavLinks";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function MobileHeader() {
   const [open, setOpen] = useState(false);
@@ -28,6 +29,9 @@ export default function MobileHeader() {
         </SheetContent>
       </Sheet>
       <span className="ml-2 text-lg font-bold tracking-tight">家計簿</span>
+      <div className="ml-auto">
+        <ThemeToggle />
+      </div>
     </header>
   );
 }

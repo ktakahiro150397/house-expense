@@ -16,22 +16,22 @@ export default function IncomeExpenseBalance({ income, expense, transfer }: Prop
         <CardTitle className="text-base">今月の収支</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="grid grid-cols-3 gap-2 text-center sm:gap-4">
           <div>
             <p className="text-xs text-muted-foreground">収入</p>
-            <p className="font-semibold text-green-600">
+            <p className="font-semibold text-green-600 text-sm sm:text-base">
               ¥{income.toLocaleString("ja-JP")}
             </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">支出</p>
-            <p className="font-semibold text-red-500">
+            <p className="font-semibold text-red-500 text-sm sm:text-base">
               ¥{expense.toLocaleString("ja-JP")}
             </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">振替</p>
-            <p className="font-semibold text-muted-foreground">
+            <p className="font-semibold text-muted-foreground text-sm sm:text-base">
               ¥{transfer.toLocaleString("ja-JP")}
             </p>
           </div>

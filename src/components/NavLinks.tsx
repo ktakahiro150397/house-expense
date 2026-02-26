@@ -21,16 +21,16 @@ export default function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
-    <nav className="flex-1 space-y-1 px-3 py-4">
+    <nav className="flex-1 space-y-0.5 px-3 py-4">
       {links.map(({ label, icon: Icon, href, implemented }) => {
         const isActive = pathname === href;
         if (!implemented) {
           return (
             <span
               key={href}
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground cursor-not-allowed opacity-50"
+              className="flex items-center gap-3 rounded-md px-3 py-3 text-sm text-muted-foreground cursor-not-allowed opacity-50"
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-5 w-5 shrink-0" />
               {label}
             </span>
           );
@@ -41,13 +41,13 @@ export default function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             href={href}
             onClick={onNavigate}
             className={cn(
-              "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
+              "flex items-center gap-3 rounded-md px-3 py-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground active:bg-accent",
               isActive
                 ? "bg-accent text-accent-foreground font-medium"
                 : "text-muted-foreground"
             )}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className="h-5 w-5 shrink-0" />
             {label}
           </Link>
         );
