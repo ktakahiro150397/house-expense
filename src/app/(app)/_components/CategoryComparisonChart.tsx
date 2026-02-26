@@ -68,8 +68,10 @@ export default function CategoryComparisonChart({
               axisLine={false}
             />
             <Tooltip
-              formatter={(value: number | undefined, name: string) => {
-                if (value == null) return ["", name];
+              formatter={(value, name) => {
+                if (typeof value !== "number") {
+                  return ["", name ?? ""];
+                }
                 const label = name === "current" ? monthLabel : prevMonthLabel;
                 return [`¥${value.toLocaleString("ja-JP")}`, label];
               }}

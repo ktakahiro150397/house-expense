@@ -61,8 +61,8 @@ export default function CumulativeSpendingChart({ data, monthLabel, todayDay }: 
               width={44}
             />
             <Tooltip
-              formatter={(value: number | undefined, name: string) => {
-                if (value == null) return ["", name];
+              formatter={(value: number | undefined, name: string | undefined) => {
+                if (value == null) return ["", name ?? ""];
                 const label = name === "cumulative" ? "累計" : "当日";
                 return [`¥${value.toLocaleString("ja-JP")}`, label];
               }}

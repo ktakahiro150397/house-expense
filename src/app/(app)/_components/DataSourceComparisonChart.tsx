@@ -55,8 +55,8 @@ export default function DataSourceComparisonChart({
               width={44}
             />
             <Tooltip
-              formatter={(value: number | undefined, name: string) => {
-                if (value == null) return ["", name];
+              formatter={(value: number | undefined, name: string | undefined) => {
+                if (value == null) return ["", name ?? ""];
                 const label = name === "current" ? monthLabel : prevMonthLabel;
                 return [`¥${value.toLocaleString("ja-JP")}`, label];
               }}
