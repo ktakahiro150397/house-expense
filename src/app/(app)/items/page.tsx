@@ -38,53 +38,107 @@ export default async function ItemsPage() {
           </p>
         </div>
       ) : (
-        <div className="rounded-md border overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>商品名</TableHead>
-                <TableHead className="w-20">単位</TableHead>
-                <TableHead className="text-right w-32">最新単価</TableHead>
-                <TableHead className="text-right w-24">購入回数</TableHead>
-                <TableHead className="w-36">最終購入日</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {products.map((product) => (
-                <TableRow key={product.id} className="hover:bg-muted/30">
-                  <TableCell>
-                    <Link
-                      href={`/items/${product.id}`}
-                      className="font-medium hover:underline text-primary"
-                    >
-                      {product.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {product.unit ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-sm">
-                    {product.latestUnitPrice != null
-                      ? `¥${product.latestUnitPrice.toLocaleString()}${product.unit ? `/${product.unit}` : ""}`
-                      : "—"}
-                  </TableCell>
-                  <TableCell className="text-right text-sm">
-                    {product.purchaseCount.toLocaleString()} 回
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {product.latestDate
-                      ? new Date(product.latestDate).toLocaleDateString("ja-JP", {
-                          year: "numeric",
-                          month: "2-digit",
-                          day: "2-digit",
-                        })
-                      : "—"}
-                  </TableCell>
+        <>
+          {/* モバイル: カード形式 */}
+          <div className="md:hidden space-y-2">
+            {products.map((product) => (
+              <div
+                key={product.id}
+                className="rounded-lg border bg-card p-3 space-y-2"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <Link
+                    href={`/items/${product.id}`}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    {product.name}
+                  </Link>
+                  {product.unit && (
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {product.unit}
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">最新単価</p>
+                    <p className="font-mono">
+                      {product.latestUnitPrice != null
+                        ? `¥${product.latestUnitPrice.toLocaleString()}${product.unit ? `/${product.unit}` : ""}`
+                        : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">購入回数</p>
+                    <p>{product.purchaseCount.toLocaleString()} 回</p>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  最終購入:{" "}
+                  {product.latestDate
+                    ? new Date(product.latestDate).toLocaleDateString("ja-JP", {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                      })
+                    : "—"}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* デスクトップ: テーブル形式 */}
+          <div className="hidden md:block rounded-md border overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>商品名</TableHead>
+                  <TableHead className="w-20">単位</TableHead>
+                  <TableHead className="text-right w-32">最新単価</TableHead>
+                  <TableHead className="text-right w-24">購入回数</TableHead>
+                  <TableHead className="w-36">最終購入日</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {products.map((product) => (
+                  <TableRow key={product.id} className="hover:bg-muted/30">
+                    <TableCell>
+                      <Link
+                        href={`/items/${product.id}`}
+                        className="font-medium hover:underline text-primary"
+                      >
+                        {product.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {product.unit ?? "—"}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-sm">
+                      {product.latestUnitPrice != null
+                        ? `¥${product.latestUnitPrice.toLocaleString()}${product.unit ? `/${product.unit}` : ""}`
+                        : "—"}
+                    </TableCell>
+                    <TableCell className="text-right text-sm">
+                      {product.purchaseCount.toLocaleString()} 回
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {product.latestDate
+                        ? new Date(product.latestDate).toLocaleDateString(
+                            "ja-JP",
+                            {
+                              year: "numeric",
+                              month: "2-digit",
+                              day: "2-digit",
+                            }
+                          )
+                        : "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
     </div>
   );
