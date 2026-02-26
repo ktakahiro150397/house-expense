@@ -122,3 +122,59 @@
     @apply bg-background text-foreground;
     }
 }
+/* ---- キャラクターテーマ ---- */
+/* テーマを追加する場合は src/lib/themes.ts にも定義を追加してください */
+
+/* デフォルト (ベース色そのまま) */
+:root {
+  --app-accent: #e8722a;
+  --app-accent-subtle: #e8722a20;
+}
+
+/* さくら */
+html[data-character-theme="sakura"] {
+  --app-accent: #d4499a;
+  --app-accent-subtle: #d4499a20;
+  --background: oklch(0.97 0.015 355);
+  --card: oklch(0.985 0.008 355);
+  --sidebar: oklch(0.96 0.018 355);
+}
+html.dark[data-character-theme="sakura"] {
+  --app-accent: #d4499a;
+  --app-accent-subtle: #d4499a20;
+  --background: oklch(0.145 0.018 355);
+  --card: oklch(0.205 0.018 355);
+  --sidebar: oklch(0.205 0.018 355);
+}
+
+/* スカイ */
+html[data-character-theme="sky"] {
+  --app-accent: #0284c7;
+  --app-accent-subtle: #0284c720;
+  --background: oklch(0.97 0.015 240);
+  --card: oklch(0.985 0.008 240);
+  --sidebar: oklch(0.96 0.018 240);
+}
+html.dark[data-character-theme="sky"] {
+  --app-accent: #0284c7;
+  --app-accent-subtle: #0284c720;
+  --background: oklch(0.145 0.018 240);
+  --card: oklch(0.205 0.018 240);
+  --sidebar: oklch(0.205 0.018 240);
+}
+
+/* フォレスト */
+html[data-character-theme="forest"] {
+  --app-accent: #15803d;
+  --app-accent-subtle: #15803d20;
+  --background: oklch(0.97 0.015 145);
+  --card: oklch(0.985 0.008 145);
+  --sidebar: oklch(0.96 0.018 145);
+}
+html.dark[data-character-theme="forest"] {
+  --app-accent: #15803d;
+  --app-accent-subtle: #15803d20;
+  --background: oklch(0.145 0.018 145);
+  --card: oklch(0.205 0.018 145);
+  --sidebar: oklch(0.205 0.018 145);
+}

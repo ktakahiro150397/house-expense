@@ -2,8 +2,16 @@
 
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-import { Moon, Sun } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Moon, Sun, Monitor } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+type ThemeOption = "light" | "dark" | "system";
+
+const OPTIONS: { value: ThemeOption; icon: typeof Sun; label: string }[] = [
+  { value: "light",  icon: Sun,     label: "ライト" },
+  { value: "dark",   icon: Moon,    label: "ダーク" },
+  { value: "system", icon: Monitor, label: "システム" },
+];
 
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -14,20 +22,33 @@ export default function ThemeToggle() {
   }, []);
 
   if (!mounted) {
-    return <Button variant="ghost" size="icon" className="h-8 w-8" disabled />;
+    return (
+      <div className="flex rounded-md border overflow-hidden" aria-hidden>
+        {OPTIONS.map((o) => (
+          <div key={o.value} className="h-7 w-7 bg-muted" />
+        ))}
+      </div>
+    );
   }
 
-  const isDark = theme === "dark";
-
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-8 w-8"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      aria-label={isDark ? "ライトモードに切り替え" : "ダークモードに切り替え"}
-    >
-      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-    </Button>
+    <div className="flex rounded-md border overflow-hidden">
+      {OPTIONS.map(({ value, icon: Icon, label }) => (
+        <button
+          key={value}
+          onClick={() => setTheme(value)}
+          aria-label={label}
+          title={label}
+          className={cn(
+            "h-7 w-7 flex items-center justify-center transition-colors",
+            theme === value
+              ? "bg-foreground text-background"
+              : "hover:bg-muted text-muted-foreground"
+          )}
+        >
+          <Icon className="h-3.5 w-3.5" />
+        </button>
+      ))}
+    </div>
   );
 }

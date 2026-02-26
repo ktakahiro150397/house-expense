@@ -44,7 +44,7 @@ export default function UpcomingLoanCard({ months }: Props) {
                       {s.status === "paid" ? (
                         <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
                       ) : (
-                        <XCircle className="h-4 w-4 text-orange-400 shrink-0" />
+                        <XCircle className="h-4 w-4 shrink-0" style={{ color: "var(--app-accent)" }} />
                       )}
                       <span className={`flex-1 truncate ${s.status === "paid" ? "text-muted-foreground" : ""}`}>
                         {s.loanName}
