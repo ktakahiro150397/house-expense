@@ -67,6 +67,19 @@ export async function deleteTransaction(id: number): Promise<void> {
   await prisma.transaction.delete({ where: { id } });
 }
 
+// 特定の明細の種別（expense/income/transfer）を変更する
+export async function updateTransactionType(
+  id: number,
+  type: string
+): Promise<void> {
+  const session = await auth();
+  if (!session?.user) throw new Error("未認証");
+  await prisma.transaction.update({
+    where: { id },
+    data: { type },
+  });
+}
+
 export async function addCategoryRule(
   categoryId: number,
   keyword: string

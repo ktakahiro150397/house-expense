@@ -36,6 +36,7 @@ import {
   clearCategoryOverride,
   toggleTransactionShared,
   deleteTransaction,
+  updateTransactionType,
 } from "@/lib/actions/transactions";
 
 type TransactionWithCategory = {
@@ -98,6 +99,7 @@ export default function TransactionTable({ transactions, categories }: Props) {
         | { type: "setOverride"; id: number }
         | { type: "clearOverride"; id: number }
         | { type: "shared"; id: number; isShared: boolean }
+        | { type: "transactionType"; id: number; transactionType: string }
         | { type: "delete"; id: number }
     ) => {
       if (update.type === "delete") {
@@ -130,6 +132,10 @@ export default function TransactionTable({ transactions, categories }: Props) {
         if (update.type === "shared") {
           if (t.id !== update.id) return t;
           return { ...t, isShared: update.isShared };
+        }
+        if (update.type === "transactionType") {
+          if (t.id !== update.id) return t;
+          return { ...t, type: update.transactionType };
         }
         return t;
       });
@@ -182,6 +188,14 @@ export default function TransactionTable({ transactions, categories }: Props) {
     });
   }
 
+  function handleTypeChange(id: number, transactionType: string) {
+    startTransition(async () => {
+      updateOptimistic({ type: "transactionType", id, transactionType });
+      await updateTransactionType(id, transactionType);
+      router.refresh();
+    });
+  }
+
   function handleDelete(id: number) {
     startTransition(async () => {
       updateOptimistic({ type: "delete", id });
@@ -205,15 +219,27 @@ export default function TransactionTable({ transactions, categories }: Props) {
               t.categoryIsOverridden ? "border-blue-500" : ""
             }`}
           >
-            {/* 上段: 日付・種別バッジ・金額 */}
+            {/* 上段: 日付・種別選択・金額 */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
                   {formatDate(t.usageDate)}
                 </span>
-                <Badge variant={TYPE_VARIANT[t.type] ?? "outline"} className="text-xs shrink-0">
-                  {TYPE_LABEL[t.type] ?? t.type}
-                </Badge>
+                <Select
+                  value={t.type}
+                  onValueChange={(val) => handleTypeChange(t.id, val)}
+                >
+                  <SelectTrigger className="h-6 text-xs px-2 w-auto shrink-0 border-0 bg-transparent p-0">
+                    <Badge variant={TYPE_VARIANT[t.type] ?? "outline"} className="text-xs cursor-pointer">
+                      {TYPE_LABEL[t.type] ?? t.type}
+                    </Badge>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="expense">支出</SelectItem>
+                    <SelectItem value="income">収入</SelectItem>
+                    <SelectItem value="transfer">振替</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <span className="font-mono font-semibold whitespace-nowrap text-sm shrink-0">
                 {t.type === "expense" ? (
@@ -360,9 +386,21 @@ export default function TransactionTable({ transactions, categories }: Props) {
                   {t.dataSource?.name ?? "—"}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={TYPE_VARIANT[t.type] ?? "outline"}>
-                    {TYPE_LABEL[t.type] ?? t.type}
-                  </Badge>
+                  <Select
+                    value={t.type}
+                    onValueChange={(val) => handleTypeChange(t.id, val)}
+                  >
+                    <SelectTrigger className="h-8 text-sm w-24 border-0 bg-transparent p-0 shadow-none focus:ring-0">
+                      <Badge variant={TYPE_VARIANT[t.type] ?? "outline"} className="cursor-pointer">
+                        {TYPE_LABEL[t.type] ?? t.type}
+                      </Badge>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="expense">支出</SelectItem>
+                      <SelectItem value="income">収入</SelectItem>
+                      <SelectItem value="transfer">振替</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1 group">
