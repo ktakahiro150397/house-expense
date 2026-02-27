@@ -28,9 +28,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Receipt, Trash2 } from "lucide-react";
+import { Lock, LockOpen, Receipt, Trash2 } from "lucide-react";
 import {
   updateTransactionCategory,
+  updateSingleTransactionCategory,
+  setCategoryOverride,
+  clearCategoryOverride,
   toggleTransactionShared,
   deleteTransaction,
 } from "@/lib/actions/transactions";
@@ -42,6 +45,7 @@ type TransactionWithCategory = {
   description: string;
   type: string;
   isShared: boolean;
+  categoryIsOverridden: boolean;
   receiptImageUrl: string | null;
   category: { id: number; name: string } | null;
   dataSource: { id: number; name: string } | null;
@@ -75,6 +79,12 @@ function formatDate(d: Date): string {
   return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}`;
 }
 
+function categorySelectClass(isOverridden: boolean, hasCategory: boolean): string {
+  if (isOverridden) return "border-blue-500";
+  if (!hasCategory) return "border-amber-400";
+  return "";
+}
+
 export default function TransactionTable({ transactions, categories }: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -84,6 +94,9 @@ export default function TransactionTable({ transactions, categories }: Props) {
       state,
       update:
         | { type: "category"; description: string; categoryId: number | null }
+        | { type: "categorySingle"; id: number; categoryId: number | null }
+        | { type: "setOverride"; id: number }
+        | { type: "clearOverride"; id: number }
         | { type: "shared"; id: number; isShared: boolean }
         | { type: "delete"; id: number }
     ) => {
@@ -92,9 +105,27 @@ export default function TransactionTable({ transactions, categories }: Props) {
       }
       return state.map((t) => {
         if (update.type === "category") {
-          if (t.description !== update.description) return t;
+          // 個別固定済みの明細は一括更新をスキップ
+          if (t.description !== update.description || t.categoryIsOverridden) return t;
           const cat = categories.find((c) => c.id === update.categoryId) ?? null;
           return { ...t, category: cat ? { id: cat.id, name: cat.name } : null };
+        }
+        if (update.type === "categorySingle") {
+          if (t.id !== update.id) return t;
+          const cat = categories.find((c) => c.id === update.categoryId) ?? null;
+          return {
+            ...t,
+            category: cat ? { id: cat.id, name: cat.name } : null,
+            categoryIsOverridden: true,
+          };
+        }
+        if (update.type === "setOverride") {
+          if (t.id !== update.id) return t;
+          return { ...t, categoryIsOverridden: true };
+        }
+        if (update.type === "clearOverride") {
+          if (t.id !== update.id) return t;
+          return { ...t, categoryIsOverridden: false };
         }
         if (update.type === "shared") {
           if (t.id !== update.id) return t;
@@ -107,10 +138,38 @@ export default function TransactionTable({ transactions, categories }: Props) {
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
+  // 同一摘要の全明細を一括更新（固定済み明細は除外）
   function handleCategoryChange(description: string, categoryId: number | null) {
     startTransition(async () => {
       updateOptimistic({ type: "category", description, categoryId });
       await updateTransactionCategory(description, categoryId);
+      router.refresh();
+    });
+  }
+
+  // この明細のみカテゴリを変更（固定フラグも立てる）
+  function handleSingleCategoryChange(id: number, categoryId: number | null) {
+    startTransition(async () => {
+      updateOptimistic({ type: "categorySingle", id, categoryId });
+      await updateSingleTransactionCategory(id, categoryId);
+      router.refresh();
+    });
+  }
+
+  // カテゴリ固定モードをオン（カテゴリは変えず固定フラグだけ立てる）
+  function handleSetOverride(id: number) {
+    startTransition(async () => {
+      updateOptimistic({ type: "setOverride", id });
+      await setCategoryOverride(id);
+      router.refresh();
+    });
+  }
+
+  // カテゴリ固定を解除（以降は一括更新の対象に戻る）
+  function handleClearOverride(id: number) {
+    startTransition(async () => {
+      updateOptimistic({ type: "clearOverride", id });
+      await clearCategoryOverride(id);
       router.refresh();
     });
   }
@@ -140,7 +199,12 @@ export default function TransactionTable({ transactions, categories }: Props) {
           <p className="text-center text-muted-foreground py-8">明細がありません</p>
         )}
         {optimisticTxns.map((t) => (
-          <div key={t.id} className="rounded-lg border bg-card p-3 space-y-2">
+          <div
+            key={t.id}
+            className={`rounded-lg border bg-card p-3 space-y-2 ${
+              t.categoryIsOverridden ? "border-blue-500" : ""
+            }`}
+          >
             {/* 上段: 日付・種別バッジ・金額 */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
@@ -163,25 +227,57 @@ export default function TransactionTable({ transactions, categories }: Props) {
             {/* 説明 */}
             <p className="text-sm font-medium truncate">{t.description}</p>
 
-            {/* カテゴリ選択 */}
-            <Select
-              value={t.category ? String(t.category.id) : "none"}
-              onValueChange={(val) =>
-                handleCategoryChange(t.description, val === "none" ? null : Number(val))
-              }
-            >
-              <SelectTrigger className={`h-8 text-sm w-full ${t.category === null ? "border-amber-400" : ""}`}>
-                <SelectValue placeholder="未分類" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">未分類</SelectItem>
-                {categories.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* カテゴリ選択 + 固定ボタン */}
+            <div className="flex items-center gap-1 group">
+              <Select
+                value={t.category ? String(t.category.id) : "none"}
+                onValueChange={(val) => {
+                  const categoryId = val === "none" ? null : Number(val);
+                  if (t.categoryIsOverridden) {
+                    handleSingleCategoryChange(t.id, categoryId);
+                  } else {
+                    handleCategoryChange(t.description, categoryId);
+                  }
+                }}
+              >
+                <SelectTrigger
+                  className={`h-8 text-sm flex-1 ${categorySelectClass(t.categoryIsOverridden, t.category !== null)}`}
+                >
+                  <SelectValue placeholder="未分類" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">未分類</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <button
+                onClick={() =>
+                  t.categoryIsOverridden
+                    ? handleClearOverride(t.id)
+                    : handleSetOverride(t.id)
+                }
+                className={`p-1.5 rounded transition-opacity hover:bg-muted ${
+                  t.categoryIsOverridden
+                    ? "opacity-100"
+                    : "opacity-0 group-hover:opacity-60"
+                }`}
+                title={
+                  t.categoryIsOverridden
+                    ? "カテゴリ固定を解除（一括更新の対象に戻す）"
+                    : "この明細のカテゴリを固定（個別変更モード）"
+                }
+              >
+                {t.categoryIsOverridden ? (
+                  <Lock className="size-3.5 text-blue-500" />
+                ) : (
+                  <LockOpen className="size-3.5 text-muted-foreground" />
+                )}
+              </button>
+            </div>
 
             {/* 下段: データソース・共有・レシート・削除 */}
             <div className="flex items-center justify-between gap-2">
@@ -269,27 +365,56 @@ export default function TransactionTable({ transactions, categories }: Props) {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Select
-                    value={t.category ? String(t.category.id) : "none"}
-                    onValueChange={(val) =>
-                      handleCategoryChange(
-                        t.description,
-                        val === "none" ? null : Number(val)
-                      )
-                    }
-                  >
-                    <SelectTrigger className={`w-36 h-8 text-sm ${t.category === null ? "border-amber-400" : ""}`}>
-                      <SelectValue placeholder="未分類" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">未分類</SelectItem>
-                      {categories.map((c) => (
-                        <SelectItem key={c.id} value={String(c.id)}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-1 group">
+                    <Select
+                      value={t.category ? String(t.category.id) : "none"}
+                      onValueChange={(val) => {
+                        const categoryId = val === "none" ? null : Number(val);
+                        if (t.categoryIsOverridden) {
+                          handleSingleCategoryChange(t.id, categoryId);
+                        } else {
+                          handleCategoryChange(t.description, categoryId);
+                        }
+                      }}
+                    >
+                      <SelectTrigger
+                        className={`w-36 h-8 text-sm ${categorySelectClass(t.categoryIsOverridden, t.category !== null)}`}
+                      >
+                        <SelectValue placeholder="未分類" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">未分類</SelectItem>
+                        {categories.map((c) => (
+                          <SelectItem key={c.id} value={String(c.id)}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <button
+                      onClick={() =>
+                        t.categoryIsOverridden
+                          ? handleClearOverride(t.id)
+                          : handleSetOverride(t.id)
+                      }
+                      className={`p-1 rounded transition-opacity hover:bg-muted ${
+                        t.categoryIsOverridden
+                          ? "opacity-100"
+                          : "opacity-0 group-hover:opacity-60"
+                      }`}
+                      title={
+                        t.categoryIsOverridden
+                          ? "カテゴリ固定を解除（一括更新の対象に戻す）"
+                          : "この明細のカテゴリを固定（個別変更モード）"
+                      }
+                    >
+                      {t.categoryIsOverridden ? (
+                        <Lock className="size-3.5 text-blue-500" />
+                      ) : (
+                        <LockOpen className="size-3.5 text-muted-foreground" />
+                      )}
+                    </button>
+                  </div>
                 </TableCell>
                 <TableCell className="text-right whitespace-nowrap text-sm font-mono">
                   {t.type === "expense" ? "-" : ""}¥
