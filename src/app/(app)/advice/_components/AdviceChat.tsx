@@ -32,117 +32,6 @@ const INITIAL_QUESTIONS = [
   "未精算の共有費はいくら？",
 ];
 
-const QUESTION_POOL: { keywords: string[]; questions: string[] }[] = [
-  {
-    keywords: ["収支", "合計", "収入", "支出"],
-    questions: [
-      "収支の改善ポイントはどこ？",
-      "収入と支出のバランスはどう？",
-      "黒字・赤字の要因は何？",
-      "今月の貯蓄額はいくら？",
-    ],
-  },
-  {
-    keywords: ["先月", "比べ", "前月", "推移"],
-    questions: [
-      "3ヶ月間の推移を見せて",
-      "増加したカテゴリはどれ？",
-      "減少できたカテゴリはどれ？",
-      "季節的な変動はある？",
-    ],
-  },
-  {
-    keywords: ["カテゴリ", "内訳", "分類"],
-    questions: [
-      "食費の詳細を教えて",
-      "固定費と変動費の割合は？",
-      "カテゴリ別の前月比は？",
-      "一番支出が多いカテゴリは？",
-    ],
-  },
-  {
-    keywords: ["節約", "削減", "見直し"],
-    questions: [
-      "固定費の削減策を提案して",
-      "食費を節約するアドバイスは？",
-      "サブスクの見直し提案をして",
-      "節約目標を設定してほしい",
-    ],
-  },
-  {
-    keywords: ["ローン", "返済", "残債"],
-    questions: [
-      "ローンの残額はいくら？",
-      "完済まで何ヶ月かかる？",
-      "繰り上げ返済のシミュレーションをして",
-      "今月のローン支払い予定は？",
-    ],
-  },
-  {
-    keywords: ["精算", "共有", "シェア"],
-    questions: [
-      "精算額を計算して",
-      "先月の精算内容を教えて",
-      "共有費の割合は全体の何%？",
-      "共有費のカテゴリ別内訳は？",
-    ],
-  },
-  {
-    keywords: ["傾向", "パターン", "習慣"],
-    questions: [
-      "週ごとの支出パターンは？",
-      "曜日別の支出傾向は？",
-      "衝動買いのリスクが高い時期は？",
-      "毎月の平均支出は？",
-    ],
-  },
-];
-
-const FALLBACK_QUESTIONS = [
-  "今月の家計を振り返って",
-  "来月の予算アドバイスをして",
-  "データソース別の支出割合は？",
-  "年間の支出予測をして",
-];
-
-function pickFollowUpQuestions(
-  messages: { role: string; text: string }[],
-  askedQuestions: Set<string>
-): string[] {
-  const recentText = messages
-    .slice(-4)
-    .map((m) => m.text)
-    .join(" ");
-
-  const scored = QUESTION_POOL.map((group) => {
-    const score = group.keywords.filter((kw) =>
-      recentText.includes(kw)
-    ).length;
-    return { ...group, score };
-  }).sort((a, b) => b.score - a.score);
-
-  const picked: string[] = [];
-  for (const group of scored) {
-    for (const q of group.questions) {
-      if (!askedQuestions.has(q) && !picked.includes(q)) {
-        picked.push(q);
-        if (picked.length >= 4) break;
-      }
-    }
-    if (picked.length >= 4) break;
-  }
-
-  // 足りない場合はフォールバックで補充
-  for (const q of FALLBACK_QUESTIONS) {
-    if (!askedQuestions.has(q) && !picked.includes(q)) {
-      picked.push(q);
-      if (picked.length >= 4) break;
-    }
-  }
-
-  return picked.slice(0, 4);
-}
-
 function MarkdownContent({ text }: { text: string }) {
   return (
     <ReactMarkdown
@@ -215,7 +104,6 @@ export default function AdviceChat({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [shownQuestions, setShownQuestions] = useState<string[]>(INITIAL_QUESTIONS);
-  const [askedQuestions, setAskedQuestions] = useState<Set<string>>(new Set());
   const messageAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -246,10 +134,6 @@ export default function AdviceChat({
     if (!question || isPending) return;
     setInputText("");
 
-    const newAsked = new Set(askedQuestions);
-    newAsked.add(question);
-    setAskedQuestions(newAsked);
-
     const historySnapshot = [...messages];
     const newMessages: ChatMessage[] = [
       ...historySnapshot,
@@ -262,12 +146,13 @@ export default function AdviceChat({
         selectedDataSourceIds.length > 0 ? selectedDataSourceIds : undefined;
       const res = await requestAdvice(question, historySnapshot, ids);
       const assistantText = res.error ? `エラー: ${res.error}` : res.answer;
-      const updatedMessages = [
+      setMessages([
         ...newMessages,
         { role: "assistant" as const, text: assistantText },
-      ];
-      setMessages(updatedMessages);
-      setShownQuestions(pickFollowUpQuestions(updatedMessages, newAsked));
+      ]);
+      if (res.suggestedQuestions && res.suggestedQuestions.length > 0) {
+        setShownQuestions(res.suggestedQuestions);
+      }
     });
   }
 
@@ -286,7 +171,6 @@ export default function AdviceChat({
     setMessages([]);
     setInputText("");
     setShownQuestions(INITIAL_QUESTIONS);
-    setAskedQuestions(new Set());
   }
 
   const allSelected = selectedDataSourceIds.length === dataSources.length;

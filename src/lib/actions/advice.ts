@@ -16,6 +16,7 @@ export type ChatMessage = {
 
 export type AdviceResult = {
   answer: string;
+  suggestedQuestions?: string[];
   error?: string;
 };
 
@@ -115,7 +116,30 @@ export async function requestAdvice(
     }
 
     const finalText = response.response.text();
-    return { answer: finalText };
+
+    // 会話コンテキストを活かして次の質問候補を生成（Function Calling なし）
+    let suggestedQuestions: string[] = [];
+    try {
+      const suggestResponse = await chat.sendMessage(
+        "この会話の内容を踏まえて、ユーザーが次に聞きたいと思われる質問を4つ提案してください。" +
+        "JSON配列形式のみで返してください（説明・前置き不要）。例: [\"質問1\", \"質問2\", \"質問3\", \"質問4\"]"
+      );
+      const raw = suggestResponse.response.text().trim();
+      // ```json ... ``` や余分なテキストを除去して JSON 部分だけ抽出
+      const match = raw.match(/\[[\s\S]*\]/);
+      if (match) {
+        const parsed = JSON.parse(match[0]) as unknown;
+        if (Array.isArray(parsed)) {
+          suggestedQuestions = parsed
+            .filter((q): q is string => typeof q === "string")
+            .slice(0, 4);
+        }
+      }
+    } catch {
+      // 提案生成に失敗しても本体レスポンスには影響させない
+    }
+
+    return { answer: finalText, suggestedQuestions };
   } catch (err) {
     console.error("Gemini advice error:", err);
     return {
