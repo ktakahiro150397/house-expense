@@ -77,8 +77,9 @@ model Transaction {
   type           String        // "expense" | "income" | "transfer"
   categoryId     Int?          @map("category_id")
   dataSourceId   Int?          @map("data_source_id")
-  isShared       Boolean       @default(false) @map("is_shared")
-  settlementDate DateTime?     @map("settlement_date")
+  isShared              Boolean       @default(false) @map("is_shared")
+  categoryIsOverridden  Boolean       @default(false) @map("category_is_overridden")
+  settlementDate        DateTime?     @map("settlement_date")
   hashKey          String        @unique @map("hash_key")
   receiptImageUrl  String?       @map("receipt_image_url")
   user             User          @relation(fields: [userId], references: [id])

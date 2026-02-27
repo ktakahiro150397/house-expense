@@ -80,7 +80,15 @@ export default async function TransactionsPage({
         ...(parsedDataSourceId ? { dataSourceId: parsedDataSourceId } : {}),
         ...(isShared === "1" ? { isShared: true } : {}),
       },
-      include: {
+      select: {
+        id: true,
+        usageDate: true,
+        amount: true,
+        description: true,
+        type: true,
+        isShared: true,
+        categoryIsOverridden: true,
+        receiptImageUrl: true,
         category: { select: { id: true, name: true } },
         dataSource: { select: { id: true, name: true } },
         receiptItems: {

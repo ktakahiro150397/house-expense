@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// 同じ description を持つ全明細のカテゴリを一括更新
+// 同じ description を持つ全明細のカテゴリを一括更新（個別固定済みの明細は除外）
 export async function updateTransactionCategory(
   description: string,
   categoryId: number | null
@@ -11,8 +11,41 @@ export async function updateTransactionCategory(
   const session = await auth();
   if (!session?.user) throw new Error("未認証");
   await prisma.transaction.updateMany({
-    where: { description },
+    where: { description, categoryIsOverridden: false },
     data: { categoryId },
+  });
+}
+
+// 特定の明細のみカテゴリを変更し、個別固定フラグを立てる
+export async function updateSingleTransactionCategory(
+  id: number,
+  categoryId: number | null
+): Promise<void> {
+  const session = await auth();
+  if (!session?.user) throw new Error("未認証");
+  await prisma.transaction.update({
+    where: { id },
+    data: { categoryId, categoryIsOverridden: true },
+  });
+}
+
+// 特定の明細を個別固定モードにする（カテゴリは変更しない）
+export async function setCategoryOverride(id: number): Promise<void> {
+  const session = await auth();
+  if (!session?.user) throw new Error("未認証");
+  await prisma.transaction.update({
+    where: { id },
+    data: { categoryIsOverridden: true },
+  });
+}
+
+// 個別固定を解除する（以降は一括更新の対象に戻る）
+export async function clearCategoryOverride(id: number): Promise<void> {
+  const session = await auth();
+  if (!session?.user) throw new Error("未認証");
+  await prisma.transaction.update({
+    where: { id },
+    data: { categoryIsOverridden: false },
   });
 }
 
