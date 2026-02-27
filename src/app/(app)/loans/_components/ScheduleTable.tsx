@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useRef, useTransition } from "react";
 import {
   Table,
   TableBody,
@@ -25,6 +25,13 @@ export default function ScheduleTable({
   schedules: LoanSchedule[];
 }) {
   const [isPending, startTransition] = useTransition();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const target = containerRef.current.querySelector<HTMLElement>("[data-first-unpaid]");
+    target?.scrollIntoView({ block: "nearest" });
+  }, []);
 
   function handleToggle(scheduleId: number, currentStatus: string) {
     startTransition(async () => {
@@ -32,8 +39,10 @@ export default function ScheduleTable({
     });
   }
 
+  const firstUnpaidIndex = schedules.findIndex((s) => s.status === "unpaid");
+
   return (
-    <div>
+    <div ref={containerRef}>
       {schedules.length === 0 && (
         <p className="text-center text-muted-foreground py-8 text-sm">
           返済スケジュールがありません
@@ -42,9 +51,10 @@ export default function ScheduleTable({
 
       {/* モバイル: コンパクトリスト */}
       <div className="md:hidden divide-y border-t">
-        {schedules.map((schedule) => (
+        {schedules.map((schedule, index) => (
           <div
             key={schedule.id}
+            {...(index === firstUnpaidIndex ? { "data-first-unpaid": "" } : {})}
             className={cn(
               "flex items-center justify-between px-3 py-3 gap-3",
               schedule.status === "paid" && "opacity-40"
@@ -90,9 +100,10 @@ export default function ScheduleTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {schedules.map((schedule) => (
+            {schedules.map((schedule, index) => (
               <TableRow
                 key={schedule.id}
+                {...(index === firstUnpaidIndex ? { "data-first-unpaid": "" } : {})}
                 className={cn(schedule.status === "paid" && "opacity-40")}
               >
                 <TableCell className="whitespace-nowrap text-sm">

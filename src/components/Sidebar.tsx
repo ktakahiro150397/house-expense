@@ -2,7 +2,7 @@ import { auth, signOut } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import NavLinks from "./NavLinks";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, Wallet } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import CharacterThemePicker from "./CharacterThemePicker";
 
@@ -13,8 +13,9 @@ export default async function Sidebar() {
   return (
     <aside className="hidden md:flex h-screen w-56 flex-col border-r bg-card">
       {/* ロゴ */}
-      <div className="flex h-14 items-center border-b px-4">
-        <span className="text-lg font-bold tracking-tight">家計簿</span>
+      <div className="flex h-14 items-center border-b px-4 gap-2">
+        <Wallet className="h-5 w-5 text-primary shrink-0" />
+        <span className="text-lg font-bold tracking-tight">Osaifu-Link</span>
       </div>
 
       {/* ナビリンク */}
