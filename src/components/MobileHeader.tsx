@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Menu } from "lucide-react";
+import { Menu, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import NavLinks from "@/components/NavLinks";
@@ -23,8 +23,9 @@ export default function MobileHeader({ isAdmin = false }: { isAdmin?: boolean })
           <Menu className="h-5 w-5" />
         </Button>
         <SheetContent side="left" className="w-56 p-0 flex flex-col">
-          <SheetHeader className="flex h-14 flex-row items-center border-b px-4">
-            <SheetTitle className="text-lg font-bold tracking-tight">家計簿</SheetTitle>
+          <SheetHeader className="flex h-14 flex-row items-center border-b px-4 gap-2">
+            <Wallet className="h-5 w-5 text-primary shrink-0" />
+            <SheetTitle className="text-lg font-bold tracking-tight">Osaifu-Link</SheetTitle>
           </SheetHeader>
           <NavLinks onNavigate={() => setOpen(false)} isAdmin={isAdmin} />
           {/* 外観設定（ドロワー内フッター） */}
@@ -40,7 +41,10 @@ export default function MobileHeader({ isAdmin = false }: { isAdmin?: boolean })
           </div>
         </SheetContent>
       </Sheet>
-      <span className="ml-2 text-lg font-bold tracking-tight">家計簿</span>
+      <div className="ml-2 flex items-center gap-1.5">
+        <Wallet className="h-4 w-4 text-primary" />
+        <span className="text-lg font-bold tracking-tight">Osaifu-Link</span>
+      </div>
       <div className="ml-auto">
         <ThemeToggle />
       </div>

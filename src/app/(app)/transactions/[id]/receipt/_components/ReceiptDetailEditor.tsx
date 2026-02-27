@@ -44,8 +44,8 @@ import {
 type ItemRow = {
   id?: number;
   name: string;
-  price: number;
-  quantity: number;
+  price: number | string;
+  quantity: number | string;
   productMasterId?: number | null;
 };
 
@@ -225,8 +225,8 @@ export default function ReceiptDetailEditor({
       ({ id, name, price, quantity, productMasterId }) => ({
         id,
         name,
-        price,
-        quantity,
+        price: String(price),
+        quantity: String(quantity),
         productMasterId,
       })
     )
@@ -252,7 +252,7 @@ export default function ReceiptDetailEditor({
   function handleChange(
     index: number,
     field: keyof Pick<ItemRow, "name" | "price" | "quantity">,
-    value: string | number
+    value: string
   ) {
     setRows((prev) => {
       const next = [...prev];
@@ -263,7 +263,7 @@ export default function ReceiptDetailEditor({
   }
 
   function handleAddRow() {
-    setRows((prev) => [...prev, { name: "", price: 0, quantity: 1 }]);
+    setRows((prev) => [...prev, { name: "", price: "", quantity: "1" }]);
     setSaved(false);
   }
 
@@ -273,10 +273,27 @@ export default function ReceiptDetailEditor({
   }
 
   async function handleSave() {
+    // バリデーション
+    for (const row of rows) {
+      if (row.price === "" || isNaN(Number(row.price))) {
+        setSaveError("単価に無効な値が含まれています。数値を入力してください。");
+        return;
+      }
+      if (row.quantity === "" || isNaN(Number(row.quantity)) || Number(row.quantity) <= 0) {
+        setSaveError("数量に無効な値が含まれています。1以上の数値を入力してください。");
+        return;
+      }
+    }
+
     setSaving(true);
     setSaveError(null);
     try {
-      await updateReceiptItems(transaction.id, rows);
+      const processedRows = rows.map((r) => ({
+        ...r,
+        price: Number(r.price),
+        quantity: Number(r.quantity),
+      }));
+      await updateReceiptItems(transaction.id, processedRows);
       setSaved(true);
     } catch (err) {
       setSaveError(
@@ -356,8 +373,8 @@ export default function ReceiptDetailEditor({
       setRows(
         result.items.map(({ name, price, quantity }) => ({
           name,
-          price,
-          quantity,
+          price: String(price),
+          quantity: String(quantity),
         }))
       );
       setSaved(false);
@@ -457,25 +474,25 @@ export default function ReceiptDetailEditor({
                     </TableCell>
                     <TableCell className="py-1 px-2">
                       <Input
-                        type="number"
+                        inputMode="numeric"
                         value={row.price}
                         onChange={(e) =>
-                          handleChange(i, "price", Number(e.target.value))
+                          handleChange(i, "price", e.target.value)
                         }
                         className="h-8 text-sm text-right w-24"
-                        min={0}
+                        placeholder="0"
                       />
                     </TableCell>
                     <TableCell className="py-1 px-2">
                       <div className="flex items-center gap-1">
                         <Input
-                          type="number"
+                          inputMode="numeric"
                           value={row.quantity}
                           onChange={(e) =>
-                            handleChange(i, "quantity", Number(e.target.value))
+                            handleChange(i, "quantity", e.target.value)
                           }
                           className="h-8 text-sm text-right w-20"
-                          min={1}
+                          placeholder="1"
                         />
                         {unit && (
                           <span className="text-xs text-muted-foreground whitespace-nowrap">

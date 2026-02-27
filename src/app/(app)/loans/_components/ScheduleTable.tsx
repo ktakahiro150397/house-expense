@@ -32,6 +32,8 @@ export default function ScheduleTable({
     });
   }
 
+  const firstUnpaidIndex = schedules.findIndex((s) => s.status === "unpaid");
+
   return (
     <div>
       {schedules.length === 0 && (
@@ -42,9 +44,10 @@ export default function ScheduleTable({
 
       {/* モバイル: コンパクトリスト */}
       <div className="md:hidden divide-y border-t">
-        {schedules.map((schedule) => (
+        {schedules.map((schedule, index) => (
           <div
             key={schedule.id}
+            {...(index === firstUnpaidIndex ? { "data-first-unpaid": "" } : {})}
             className={cn(
               "flex items-center justify-between px-3 py-3 gap-3",
               schedule.status === "paid" && "opacity-40"
@@ -90,9 +93,10 @@ export default function ScheduleTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {schedules.map((schedule) => (
+            {schedules.map((schedule, index) => (
               <TableRow
                 key={schedule.id}
+                {...(index === firstUnpaidIndex ? { "data-first-unpaid": "" } : {})}
                 className={cn(schedule.status === "paid" && "opacity-40")}
               >
                 <TableCell className="whitespace-nowrap text-sm">

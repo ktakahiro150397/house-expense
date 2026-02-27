@@ -23,7 +23,7 @@ type DataSource = {
   institution: string | null;
 };
 
-const PRESET_QUESTIONS = [
+const INITIAL_QUESTIONS = [
   "今月の収支を分析して",
   "先月と比べてどうだった？",
   "カテゴリ別の内訳を教えて",
@@ -103,6 +103,7 @@ export default function AdviceChat({
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [shownQuestions, setShownQuestions] = useState<string[]>(INITIAL_QUESTIONS);
   const messageAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -144,13 +145,14 @@ export default function AdviceChat({
       const ids =
         selectedDataSourceIds.length > 0 ? selectedDataSourceIds : undefined;
       const res = await requestAdvice(question, historySnapshot, ids);
+      const assistantText = res.error ? `エラー: ${res.error}` : res.answer;
       setMessages([
         ...newMessages,
-        {
-          role: "assistant",
-          text: res.error ? `エラー: ${res.error}` : res.answer,
-        },
+        { role: "assistant" as const, text: assistantText },
       ]);
+      if (res.suggestedQuestions && res.suggestedQuestions.length > 0) {
+        setShownQuestions(res.suggestedQuestions);
+      }
     });
   }
 
@@ -168,6 +170,7 @@ export default function AdviceChat({
   function handleReset() {
     setMessages([]);
     setInputText("");
+    setShownQuestions(INITIAL_QUESTIONS);
   }
 
   const allSelected = selectedDataSourceIds.length === dataSources.length;
@@ -272,7 +275,7 @@ export default function AdviceChat({
       <div className="shrink-0 border-t px-4 py-3 space-y-2">
         {/* プリセットチップ */}
         <div className="flex flex-wrap gap-1.5">
-          {PRESET_QUESTIONS.map((q) => (
+          {shownQuestions.map((q) => (
             <button
               key={q}
               onClick={() => handlePreset(q)}

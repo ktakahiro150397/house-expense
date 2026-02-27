@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,20 @@ function formatDate(d: Date): string {
 export default function LoanCard({ loan }: { loan: LoanWithSchedules }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    // display:none の要素を除外して可視要素のみ対象にする
+    const targets = container.querySelectorAll<HTMLElement>("[data-first-unpaid]");
+    const visible = Array.from(targets).find((el) => el.offsetParent !== null);
+    if (visible) {
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = visible.getBoundingClientRect();
+      container.scrollTop += targetRect.top - containerRect.top;
+    }
+  }, []);
 
   const paidSchedules = loan.schedules.filter((s) => s.status === "paid");
   const unpaidSchedules = loan.schedules.filter((s) => s.status === "unpaid");
@@ -82,7 +96,7 @@ export default function LoanCard({ loan }: { loan: LoanWithSchedules }) {
       </CardHeader>
       {/* スケジュール一覧は固定高さでスクロール */}
       <CardContent className="p-0">
-        <div className="max-h-72 overflow-y-auto">
+        <div ref={scrollContainerRef} className="max-h-72 overflow-y-auto">
           <ScheduleTable schedules={loan.schedules} />
         </div>
       </CardContent>
