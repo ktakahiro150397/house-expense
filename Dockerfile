@@ -43,6 +43,9 @@ COPY --from=builder /app/src/generated ./src/generated
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
+# Ensure the uploads directory is writable by the nextjs user
+RUN mkdir -p /app/public/uploads/receipts && chown -R nextjs:nodejs /app/public/uploads
+
 USER nextjs
 
 EXPOSE 3000
