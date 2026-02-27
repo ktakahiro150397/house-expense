@@ -1,10 +1,16 @@
 FROM node:20-alpine AS base
 
-# --- deps: install production dependencies ---
+# --- deps: install all dependencies (for build) ---
 FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
+
+# --- deps-prod: install production dependencies only (for runner) ---
+FROM base AS deps-prod
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
 
 # --- builder: build the Next.js app ---
 FROM base AS builder
@@ -36,7 +42,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy Prisma files for migrate deploy and seed
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=deps-prod /app/node_modules ./node_modules
 COPY --from=builder /app/src/generated ./src/generated
 
 # Copy entrypoint script
