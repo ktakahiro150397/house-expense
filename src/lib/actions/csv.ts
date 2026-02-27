@@ -2,14 +2,15 @@
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { SmbcBankParser, SmbcCardParser } from "@/lib/parsers";
+import { SmbcBankParser, SmbcCardParser, SbiBankParser } from "@/lib/parsers";
 import type { ParsedTransaction } from "@/lib/parsers/types";
 
-type SourceType = "smbc_bank" | "smbc_card";
+type SourceType = "smbc_bank" | "smbc_card" | "sbi_bank";
 
 function detectSourceType(content: string): SourceType {
   const firstLine = content.split("\n")[0];
   if (firstLine.startsWith("年月日")) return "smbc_bank";
+  if (firstLine.startsWith('"日付"')) return "sbi_bank";
   return "smbc_card";
 }
 
@@ -30,12 +31,24 @@ export async function parsePreviewCsv(
   if (!file) throw new Error("ファイルが見つかりません");
 
   const buffer = await file.arrayBuffer();
-  const content = new TextDecoder("shift-jis").decode(buffer);
+  const uint8 = new Uint8Array(buffer);
+  let content: string;
+  if (uint8[0] === 0xef && uint8[1] === 0xbb && uint8[2] === 0xbf) {
+    content = new TextDecoder("utf-8").decode(buffer.slice(3));
+  } else {
+    try {
+      content = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+    } catch {
+      content = new TextDecoder("shift-jis").decode(buffer);
+    }
+  }
   if (!content.trim()) throw new Error("ファイルが空です");
 
   const sourceType = detectSourceType(content);
   const parser =
-    sourceType === "smbc_bank" ? new SmbcBankParser() : new SmbcCardParser();
+    sourceType === "smbc_bank" ? new SmbcBankParser() :
+    sourceType === "sbi_bank"  ? new SbiBankParser() :
+    new SmbcCardParser();
   const transactions = parser.parse(content);
 
   if (transactions.length === 0) throw new Error("解析できる明細がありませんでした");
