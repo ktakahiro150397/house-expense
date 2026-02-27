@@ -153,7 +153,7 @@ export default function CsvUploadForm({ users, currentUserId, dataSources }: Pro
               required
             />
             <p className="text-xs text-muted-foreground">
-              SMBC銀行明細 または Vpass明細 のCSVファイル
+              SMBC銀行明細・Vpass明細・SBIネット銀行明細 のCSVファイル
             </p>
           </div>
           <Button type="submit" disabled={isLoading}>
@@ -168,10 +168,16 @@ export default function CsvUploadForm({ users, currentUserId, dataSources }: Pro
           <div className="flex items-center gap-3">
             <Badge
               variant={
-                preview.sourceType === "smbc_bank" ? "default" : "secondary"
+                preview.sourceType === "smbc_bank" || preview.sourceType === "sbi_bank"
+                  ? "default"
+                  : "secondary"
               }
             >
-              {preview.sourceType === "smbc_bank" ? "SMBC銀行" : "Vpassカード"}
+              {preview.sourceType === "smbc_bank"
+                ? "SMBC銀行"
+                : preview.sourceType === "sbi_bank"
+                  ? "SBIネット銀行"
+                  : "Vpassカード"}
             </Badge>
             <span className="text-sm text-muted-foreground">
               {preview.transactions.length} 件 ／{" "}
