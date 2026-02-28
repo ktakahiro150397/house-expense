@@ -71,6 +71,13 @@ function categorySelectClass(isOverridden: boolean, hasCategory: boolean): strin
   return "";
 }
 
+function typeSelectClass(type: string): string {
+  if (type === "expense") return "border-red-300";
+  if (type === "income") return "border-green-300";
+  if (type === "transfer") return "border-slate-300";
+  return "";
+}
+
 export default function TransactionTable({ transactions, categories }: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -215,7 +222,7 @@ export default function TransactionTable({ transactions, categories }: Props) {
                   value={t.type}
                   onValueChange={(val) => handleTypeChange(t.description, val)}
                 >
-                  <SelectTrigger className="h-7 w-20 text-xs shrink-0 px-2">
+                  <SelectTrigger className={`h-7 w-20 text-xs shrink-0 px-2 ${typeSelectClass(t.type)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -227,9 +234,9 @@ export default function TransactionTable({ transactions, categories }: Props) {
               </div>
               <span className="font-mono font-semibold whitespace-nowrap text-sm shrink-0">
                 {t.type === "expense" ? (
-                  <span className="text-destructive">-¥{Math.abs(t.amount).toLocaleString()}</span>
+                  <span className="text-red-400">-¥{Math.abs(t.amount).toLocaleString()}</span>
                 ) : (
-                  <span className="text-green-600">¥{Math.abs(t.amount).toLocaleString()}</span>
+                  <span className="text-green-500">¥{Math.abs(t.amount).toLocaleString()}</span>
                 )}
               </span>
             </div>
@@ -374,7 +381,7 @@ export default function TransactionTable({ transactions, categories }: Props) {
                     value={t.type}
                     onValueChange={(val) => handleTypeChange(t.description, val)}
                   >
-                    <SelectTrigger className="h-8 w-24 text-sm">
+                    <SelectTrigger className={`h-8 w-24 text-sm ${typeSelectClass(t.type)}`}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -437,8 +444,11 @@ export default function TransactionTable({ transactions, categories }: Props) {
                   </div>
                 </TableCell>
                 <TableCell className="text-right whitespace-nowrap text-sm font-mono">
-                  {t.type === "expense" ? "-" : ""}¥
-                  {Math.abs(t.amount).toLocaleString()}
+                  {t.type === "expense" ? (
+                    <span className="text-red-400">-¥{Math.abs(t.amount).toLocaleString()}</span>
+                  ) : (
+                    <span className="text-green-500">¥{Math.abs(t.amount).toLocaleString()}</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-center">
                   <Switch
