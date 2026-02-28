@@ -67,6 +67,19 @@ export async function deleteTransaction(id: number): Promise<void> {
   await prisma.transaction.delete({ where: { id } });
 }
 
+// 同じ description を持つ全明細の種別を一括更新
+export async function updateTransactionType(
+  description: string,
+  type: string
+): Promise<void> {
+  const session = await auth();
+  if (!session?.user) throw new Error("未認証");
+  await prisma.transaction.updateMany({
+    where: { description },
+    data: { type },
+  });
+}
+
 export async function addCategoryRule(
   categoryId: number,
   keyword: string

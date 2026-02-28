@@ -11,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -36,6 +35,7 @@ import {
   clearCategoryOverride,
   toggleTransactionShared,
   deleteTransaction,
+  updateTransactionType,
 } from "@/lib/actions/transactions";
 
 type TransactionWithCategory = {
@@ -59,20 +59,6 @@ type Props = {
   categories: CategoryOption[];
 };
 
-const TYPE_LABEL: Record<string, string> = {
-  expense: "支出",
-  income: "収入",
-  transfer: "振替",
-};
-
-const TYPE_VARIANT: Record<
-  string,
-  "default" | "secondary" | "destructive" | "outline"
-> = {
-  expense: "destructive",
-  income: "default",
-  transfer: "secondary",
-};
 
 function formatDate(d: Date): string {
   const date = new Date(d);
@@ -82,6 +68,13 @@ function formatDate(d: Date): string {
 function categorySelectClass(isOverridden: boolean, hasCategory: boolean): string {
   if (isOverridden) return "border-blue-500";
   if (!hasCategory) return "border-amber-400";
+  return "";
+}
+
+function typeSelectClass(type: string): string {
+  if (type === "expense") return "border-red-300";
+  if (type === "income") return "border-green-300";
+  if (type === "transfer") return "border-slate-300";
   return "";
 }
 
@@ -99,6 +92,7 @@ export default function TransactionTable({ transactions, categories }: Props) {
         | { type: "clearOverride"; id: number }
         | { type: "shared"; id: number; isShared: boolean }
         | { type: "delete"; id: number }
+        | { type: "transactionType"; description: string; txType: string }
     ) => {
       if (update.type === "delete") {
         return state.filter((t) => t.id !== update.id);
@@ -130,6 +124,10 @@ export default function TransactionTable({ transactions, categories }: Props) {
         if (update.type === "shared") {
           if (t.id !== update.id) return t;
           return { ...t, isShared: update.isShared };
+        }
+        if (update.type === "transactionType") {
+          if (t.description !== update.description) return t;
+          return { ...t, type: update.txType };
         }
         return t;
       });
@@ -174,6 +172,15 @@ export default function TransactionTable({ transactions, categories }: Props) {
     });
   }
 
+  // 同一摘要の全明細の種別を一括更新
+  function handleTypeChange(description: string, txType: string) {
+    startTransition(async () => {
+      updateOptimistic({ type: "transactionType", description, txType });
+      await updateTransactionType(description, txType);
+      router.refresh();
+    });
+  }
+
   function handleSharedChange(transactionId: number, isShared: boolean) {
     startTransition(async () => {
       updateOptimistic({ type: "shared", id: transactionId, isShared });
@@ -205,21 +212,31 @@ export default function TransactionTable({ transactions, categories }: Props) {
               t.categoryIsOverridden ? "border-blue-500" : ""
             }`}
           >
-            {/* 上段: 日付・種別バッジ・金額 */}
+            {/* 上段: 日付・種別・金額 */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
                   {formatDate(t.usageDate)}
                 </span>
-                <Badge variant={TYPE_VARIANT[t.type] ?? "outline"} className="text-xs shrink-0">
-                  {TYPE_LABEL[t.type] ?? t.type}
-                </Badge>
+                <Select
+                  value={t.type}
+                  onValueChange={(val) => handleTypeChange(t.description, val)}
+                >
+                  <SelectTrigger className={`h-7 w-20 text-xs shrink-0 px-2 ${typeSelectClass(t.type)}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="expense">支出</SelectItem>
+                    <SelectItem value="income">収入</SelectItem>
+                    <SelectItem value="transfer">振替</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <span className="font-mono font-semibold whitespace-nowrap text-sm shrink-0">
                 {t.type === "expense" ? (
-                  <span className="text-destructive">-¥{Math.abs(t.amount).toLocaleString()}</span>
+                  <span className="text-red-400">-¥{Math.abs(t.amount).toLocaleString()}</span>
                 ) : (
-                  <span className="text-green-600">¥{Math.abs(t.amount).toLocaleString()}</span>
+                  <span className="text-green-500">¥{Math.abs(t.amount).toLocaleString()}</span>
                 )}
               </span>
             </div>
@@ -360,9 +377,19 @@ export default function TransactionTable({ transactions, categories }: Props) {
                   {t.dataSource?.name ?? "—"}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={TYPE_VARIANT[t.type] ?? "outline"}>
-                    {TYPE_LABEL[t.type] ?? t.type}
-                  </Badge>
+                  <Select
+                    value={t.type}
+                    onValueChange={(val) => handleTypeChange(t.description, val)}
+                  >
+                    <SelectTrigger className={`h-8 w-24 text-sm ${typeSelectClass(t.type)}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="expense">支出</SelectItem>
+                      <SelectItem value="income">収入</SelectItem>
+                      <SelectItem value="transfer">振替</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1 group">
@@ -417,8 +444,11 @@ export default function TransactionTable({ transactions, categories }: Props) {
                   </div>
                 </TableCell>
                 <TableCell className="text-right whitespace-nowrap text-sm font-mono">
-                  {t.type === "expense" ? "-" : ""}¥
-                  {Math.abs(t.amount).toLocaleString()}
+                  {t.type === "expense" ? (
+                    <span className="text-red-400">-¥{Math.abs(t.amount).toLocaleString()}</span>
+                  ) : (
+                    <span className="text-green-500">¥{Math.abs(t.amount).toLocaleString()}</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-center">
                   <Switch
