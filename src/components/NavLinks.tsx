@@ -62,7 +62,7 @@ export default function NavLinks({
   };
 
   return (
-    <nav className="flex-1 space-y-0.5 px-3 py-4">
+    <nav className="flex-1 min-h-0 overflow-y-auto space-y-0.5 px-3 py-4">
       {links.map(renderLink)}
       {isAdmin && (
         <>
