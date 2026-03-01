@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Upload, List, Wallet, Building2, Settings, Database, Package, Bot, Palette } from "lucide-react";
+import { Home, Upload, List, Wallet, Building2, Settings, Database, Package, Bot, Palette, BarChart2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
   { label: "ホーム", icon: Home, href: "/", implemented: true },
   { label: "CSVインポート", icon: Upload, href: "/import", implemented: true },
   { label: "明細一覧", icon: List, href: "/transactions", implemented: true },
+  { label: "月別サマリー", icon: BarChart2, href: "/monthly", implemented: true },
   { label: "精算", icon: Wallet, href: "/settlement", implemented: true },
   { label: "ローン管理", icon: Building2, href: "/loans", implemented: true },
   { label: "カテゴリ管理", icon: Settings, href: "/settings/categories", implemented: true },
