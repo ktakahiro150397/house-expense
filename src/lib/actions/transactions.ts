@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // 同じ description を持つ全明細のカテゴリを一括更新（個別固定済みの明細は除外）
+// 同時に CategoryRule へ保存し、次回インポート時の自動分類に使う
 export async function updateTransactionCategory(
   description: string,
   categoryId: number | null
@@ -14,6 +15,13 @@ export async function updateTransactionCategory(
     where: { description, categoryIsOverridden: false },
     data: { categoryId },
   });
+  if (categoryId !== null) {
+    await prisma.categoryRule.upsert({
+      where: { keyword: description },
+      update: { categoryId },
+      create: { categoryId, keyword: description },
+    });
+  }
 }
 
 // 特定の明細のみカテゴリを変更し、個別固定フラグを立てる

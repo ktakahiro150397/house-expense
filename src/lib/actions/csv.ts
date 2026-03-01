@@ -90,6 +90,10 @@ export async function importTransactions(
 
   const { transactions, cardHolderUserMap, defaultUserId, dataSourceId } = payload;
 
+  // CategoryRule を取得して description → categoryId のマップを作る
+  const rules = await prisma.categoryRule.findMany();
+  const ruleMap = new Map(rules.map((r) => [r.keyword, r.categoryId]));
+
   const data = transactions.map((t) => ({
     userId:
       t.cardHolder !== undefined
@@ -101,6 +105,7 @@ export async function importTransactions(
     type: t.type,
     hashKey: t.hashKey,
     ...(dataSourceId !== undefined ? { dataSourceId } : {}),
+    ...(ruleMap.has(t.description) ? { categoryId: ruleMap.get(t.description) } : {}),
   }));
 
   const result = await prisma.transaction.createMany({
