@@ -25,7 +25,9 @@
       "Bash(git:*)",
       "Bash(tail:*)",
       "Bash(test:*)",
-      "Bash(docker ps:*)"
+      "Bash(docker ps:*)",
+      "Bash(gh pr:*)",
+      "Bash(gh issue:*)"
     ]
   }
 }
