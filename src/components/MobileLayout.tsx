@@ -11,20 +11,24 @@ export default function MobileLayout({
   isAdmin: boolean;
 }) {
   const [headerVisible, setHeaderVisible] = useState(true);
-  const lastScrollY = useRef(0);
+  const lastToggleY = useRef(0);
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLElement>) => {
     const curr = e.currentTarget.scrollTop;
     if (curr <= 0) {
       setHeaderVisible(true);
-      lastScrollY.current = curr;
+      lastToggleY.current = curr;
       return;
     }
-    const diff = curr - lastScrollY.current;
-    if (diff > 8) setHeaderVisible(false);
-    else if (diff < -8) setHeaderVisible(true);
-    lastScrollY.current = curr;
-  }, []);
+    const diffFromToggle = curr - lastToggleY.current;
+    if (diffFromToggle > 8 && headerVisible) {
+      setHeaderVisible(false);
+      lastToggleY.current = curr;
+    } else if (diffFromToggle < -8 && !headerVisible) {
+      setHeaderVisible(true);
+      lastToggleY.current = curr;
+    }
+  }, [headerVisible]);
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden md:[display:contents]">
