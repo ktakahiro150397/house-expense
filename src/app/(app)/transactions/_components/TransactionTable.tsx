@@ -235,8 +235,10 @@ export default function TransactionTable({ transactions, categories }: Props) {
               <span className="font-mono font-semibold whitespace-nowrap text-sm shrink-0">
                 {t.type === "expense" ? (
                   <span className="text-red-400">-¥{Math.abs(t.amount).toLocaleString()}</span>
-                ) : (
+                ) : t.type === "income" ? (
                   <span className="text-green-500">¥{Math.abs(t.amount).toLocaleString()}</span>
+                ) : (
+                  <span className="text-gray-400">¥{Math.abs(t.amount).toLocaleString()}</span>
                 )}
               </span>
             </div>
@@ -446,8 +448,10 @@ export default function TransactionTable({ transactions, categories }: Props) {
                 <TableCell className="text-right whitespace-nowrap text-sm font-mono">
                   {t.type === "expense" ? (
                     <span className="text-red-400">-¥{Math.abs(t.amount).toLocaleString()}</span>
-                  ) : (
+                  ) : t.type === "income" ? (
                     <span className="text-green-500">¥{Math.abs(t.amount).toLocaleString()}</span>
+                  ) : (
+                    <span className="text-gray-400">¥{Math.abs(t.amount).toLocaleString()}</span>
                   )}
                 </TableCell>
                 <TableCell className="text-center">
