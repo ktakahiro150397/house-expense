@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { TransactionType } from "@/lib/parsers/types";
 
 // ============================================================
 // Gemini Function Calling 定義（家計アドバイス用）
@@ -164,6 +165,60 @@ export const adviceFunctionDeclarations = [
       required: [],
     },
   },
+  {
+    name: "searchTransactions",
+    description:
+      "摘要キーワード・日付範囲・金額範囲・カテゴリ・種別などの条件で明細を検索する。" +
+      "「〇〇という店の取引を探して」「3月の3000円以上の支出を見せて」などに対応する。",
+    parameters: {
+      type: "object",
+      properties: {
+        keyword: {
+          type: "string",
+          description: "摘要（説明）に含まれるキーワード（前後あいまい検索）",
+          nullable: true,
+        },
+        year: { type: "integer", description: "絞り込む年", nullable: true },
+        month: {
+          type: "integer",
+          description: "絞り込む月（1〜12）",
+          nullable: true,
+        },
+        minAmount: {
+          type: "integer",
+          description: "最小金額（円）",
+          nullable: true,
+        },
+        maxAmount: {
+          type: "integer",
+          description: "最大金額（円）",
+          nullable: true,
+        },
+        type: {
+          type: "string",
+          description: "種別: expense / income / transfer",
+          nullable: true,
+        },
+        categoryId: {
+          type: "integer",
+          description: "カテゴリID（getCategoryBreakdown の結果から取得）",
+          nullable: true,
+        },
+        limit: {
+          type: "integer",
+          description: "取得件数上限（デフォルト 20、最大 50）",
+          nullable: true,
+        },
+        dataSourceIds: {
+          type: "array",
+          items: { type: "integer" },
+          description: "対象データソースID一覧（省略時は全データソース）",
+          nullable: true,
+        },
+      },
+      required: [],
+    },
+  },
 ] as const;
 
 // ============================================================
@@ -178,16 +233,18 @@ export type AdviceFunctionName =
   | "getLoansOverview"
   | "getIncomeExpenseSummary"
   | "getUnsettledSharedExpenses"
-  | "getTopPurchasedProducts";
+  | "getTopPurchasedProducts"
+  | "searchTransactions";
 
 // ============================================================
 // DB クエリ実装
 // ============================================================
 
-function buildDateRange(year: number, month: number) {
-  const start = new Date(year, month - 1, 1);
-  const end = new Date(year, month, 1);
-  return { start, end };
+function buildDateRange(year: number, month?: number) {
+  if (month !== undefined) {
+    return { start: new Date(year, month - 1, 1), end: new Date(year, month, 1) };
+  }
+  return { start: new Date(year, 0, 1), end: new Date(year + 1, 0, 1) };
 }
 
 function buildDataSourceFilter(dataSourceIds?: number[] | null) {
@@ -473,6 +530,60 @@ export async function callAdviceFunction(
         .slice(0, limit);
 
       return { products: ranked };
+    }
+
+    case "searchTransactions": {
+      const keyword = args.keyword as string | undefined;
+      const year = args.year as number | undefined;
+      const month = args.month as number | undefined;
+      const minAmount = args.minAmount as number | undefined;
+      const maxAmount = args.maxAmount as number | undefined;
+      const type = args.type as TransactionType | undefined;
+      const categoryId = args.categoryId as number | undefined;
+      const limit = Math.min(Number(args.limit ?? 20), 50);
+      const dataSourceIds = args.dataSourceIds as number[] | undefined;
+
+      let dateFilter = {};
+      if (year) {
+        const { start, end } = buildDateRange(year, month);
+        dateFilter = { usageDate: { gte: start, lt: end } };
+      }
+
+      const transactions = await prisma.transaction.findMany({
+        where: {
+          ...dateFilter,
+          ...(keyword ? { description: { contains: keyword } } : {}),
+          ...(minAmount !== undefined ? { amount: { gte: minAmount } } : {}),
+          ...(maxAmount !== undefined ? { amount: { lte: maxAmount } } : {}),
+          ...(type ? { type } : {}),
+          ...(categoryId !== undefined ? { categoryId } : {}),
+          ...buildDataSourceFilter(dataSourceIds),
+        },
+        select: {
+          id: true,
+          usageDate: true,
+          amount: true,
+          description: true,
+          type: true,
+          isShared: true,
+          category: { select: { name: true } },
+        },
+        orderBy: { usageDate: "desc" },
+        take: limit,
+      });
+
+      return {
+        count: transactions.length,
+        transactions: transactions.map((tx) => ({
+          id: tx.id,
+          date: tx.usageDate.toISOString().slice(0, 10),
+          description: tx.description,
+          amount: tx.amount,
+          type: tx.type,
+          category: tx.category?.name ?? "未分類",
+          isShared: tx.isShared,
+        })),
+      };
     }
 
     default:

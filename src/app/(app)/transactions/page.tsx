@@ -16,12 +16,13 @@ export default async function TransactionsPage({
     type?: string;
     dataSourceId?: string;
     isShared?: string;
+    keyword?: string;
   }>;
 }) {
   const session = await auth();
   if (!session?.user) redirect("/auth/signin");
 
-  const { monthFrom, monthTo, categoryIds, type, dataSourceId, isShared } =
+  const { monthFrom, monthTo, categoryIds, type, dataSourceId, isShared, keyword } =
     await searchParams;
 
   const allDates = await prisma.transaction.findMany({
@@ -79,6 +80,7 @@ export default async function TransactionsPage({
         ...(type ? { type } : {}),
         ...(parsedDataSourceId ? { dataSourceId: parsedDataSourceId } : {}),
         ...(isShared === "1" ? { isShared: true } : {}),
+        ...(keyword ? { description: { contains: keyword } } : {}),
       },
       select: {
         id: true,
@@ -149,6 +151,7 @@ export default async function TransactionsPage({
           dataSources={dataSources}
           selectedDataSourceId={dataSourceId ?? ""}
           isSharedFilter={isShared === "1"}
+          keyword={keyword ?? ""}
         />
       </Suspense>
       <TransactionTable transactions={transactions} categories={categories} />

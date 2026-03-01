@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type") ?? "";
   const dataSourceId = searchParams.get("dataSourceId") ?? "";
   const isShared = searchParams.get("isShared") ?? "";
+  const keyword = searchParams.get("keyword") ?? "";
 
   const categoryIdList = categoryIds
     ? categoryIds
@@ -73,6 +74,7 @@ export async function GET(request: NextRequest) {
       ...(type ? { type } : {}),
       ...(parsedDataSourceId ? { dataSourceId: parsedDataSourceId } : {}),
       ...(isShared === "1" ? { isShared: true } : {}),
+      ...(keyword ? { description: { contains: keyword } } : {}),
     },
     include: {
       category: { select: { name: true } },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import {
@@ -18,9 +18,36 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 
 type CategoryOption = { id: number; name: string };
 type DataSourceOption = { id: number; name: string };
+
+function KeywordInput({
+  value,
+  onChange,
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  className?: string;
+}) {
+  return (
+    <div className="flex gap-2 items-center">
+      <Input
+        placeholder="摘要キーワードで検索..."
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={className}
+      />
+      {value && (
+        <Button variant="ghost" size="sm" onClick={() => onChange("")}>
+          ✕
+        </Button>
+      )}
+    </div>
+  );
+}
 
 type Props = {
   months: string[];
@@ -32,6 +59,7 @@ type Props = {
   dataSources: DataSourceOption[];
   selectedDataSourceId: string;
   isSharedFilter: boolean;
+  keyword: string;
 };
 
 export default function TransactionFilters({
@@ -44,10 +72,30 @@ export default function TransactionFilters({
   dataSources,
   selectedDataSourceId,
   isSharedFilter,
+  keyword,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [keywordInput, setKeywordInput] = useState(keyword);
+  const committedKeyword = useRef(keyword);
+
+  // URL の keyword が変わったら入力欄を同期（pushParams 後のループを防ぐため ref も更新）
+  useEffect(() => {
+    committedKeyword.current = keyword;
+    setKeywordInput(keyword);
+  }, [keyword]);
+
+  // 入力が止まって 400ms 後に URL へ反映（デバウンス）
+  useEffect(() => {
+    if (keywordInput === committedKeyword.current) return;
+    const timer = setTimeout(() => {
+      committedKeyword.current = keywordInput;
+      pushParams({ keyword: keywordInput.trim() || null });
+    }, 400);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keywordInput]);
 
   // monthFrom 以降の月のみ monthTo の選択肢に表示する
   const availableToMonths = months.filter((m) => m >= monthFrom);
@@ -56,7 +104,8 @@ export default function TransactionFilters({
     (selectedCategoryIds.length > 0 ? 1 : 0) +
     (selectedType ? 1 : 0) +
     (selectedDataSourceId ? 1 : 0) +
-    (isSharedFilter ? 1 : 0);
+    (isSharedFilter ? 1 : 0) +
+    (keyword ? 1 : 0);
 
   function pushParams(updates: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -112,6 +161,13 @@ export default function TransactionFilters({
 
   const filterBody = (
     <div className="flex flex-wrap gap-3 items-center">
+      {/* キーワード検索 */}
+      <KeywordInput
+        value={keywordInput}
+        onChange={setKeywordInput}
+        className="max-w-xs"
+      />
+
       {/* 月範囲 */}
       <div className="flex items-center gap-2">
         <Select value={monthFrom} onValueChange={handleMonthFromChange}>
@@ -256,6 +312,16 @@ export default function TransactionFilters({
         </Button>
         {mobileOpen && (
           <div className="mt-3 p-3 border rounded-lg bg-card flex flex-col gap-3">
+            {/* キーワード検索 */}
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">キーワード</p>
+              <KeywordInput
+                value={keywordInput}
+                onChange={setKeywordInput}
+                className="flex-1"
+              />
+            </div>
+
             {/* 月範囲 */}
             <div>
               <p className="text-xs text-muted-foreground mb-1">期間</p>
