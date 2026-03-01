@@ -39,6 +39,17 @@ export default function CategoryBreakdownChart({
   const { accentColor } = useAccentColor();
   const CHART_COLORS = [accentColor, ...BASE_COLORS];
 
+  const { yAxisWidth, chartHeight } = useMemo(() => {
+    if (chartData.length === 0) return { yAxisWidth: 48, chartHeight: 160 };
+    const maxChars = Math.max(...chartData.map((d) => [...d.name].length));
+    return {
+      yAxisWidth: Math.max(48, maxChars * PX_PER_CHAR + 4),
+      chartHeight: Math.max(160, chartData.length * 40),
+    };
+  }, [chartData]);
+
+  const hasSelection = selectedCategoryId !== undefined;
+
   if (chartData.length === 0) {
     return (
       <Card>
@@ -51,15 +62,6 @@ export default function CategoryBreakdownChart({
       </Card>
     );
   }
-
-  const { yAxisWidth, chartHeight } = useMemo(() => {
-    const maxChars = Math.max(...chartData.map((d) => [...d.name].length));
-    return {
-      yAxisWidth: Math.max(48, maxChars * PX_PER_CHAR + 4),
-      chartHeight: Math.max(160, chartData.length * 40),
-    };
-  }, [chartData]);
-  const hasSelection = selectedCategoryId !== undefined;
 
   return (
     <Card>
@@ -105,12 +107,11 @@ export default function CategoryBreakdownChart({
               <LabelList
                 dataKey="amount"
                 content={(props) => {
-                  const { x, y, width, height, value, index } = props as {
+                  const { x, y, width, height, index } = props as {
                     x: number;
                     y: number;
                     width: number;
                     height: number;
-                    value: number;
                     index: number;
                   };
                   if (index == null) return null;
