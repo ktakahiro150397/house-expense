@@ -1,5 +1,5 @@
 import Sidebar from "@/components/Sidebar";
-import MobileHeader from "@/components/MobileHeader";
+import MobileLayout from "@/components/MobileLayout";
 import { auth } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 
@@ -14,8 +14,7 @@ export default async function AppLayout({
   return (
     <div className="flex h-dvh flex-col md:flex-row overflow-hidden">
       <Sidebar />
-      <MobileHeader isAdmin={isAdmin} />
-      <main className="flex-1 min-h-0 overflow-y-auto overscroll-none p-4 md:p-8">{children}</main>
+      <MobileLayout isAdmin={isAdmin}>{children}</MobileLayout>
     </div>
   );
 }
