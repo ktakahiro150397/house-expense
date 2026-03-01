@@ -47,3 +47,39 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Home Server
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install cloudflared
+        run: |
+          curl -fsSL --output cloudflared.deb \
+            https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+          sudo dpkg -i cloudflared.deb
+
+      - name: Setup SSH via Cloudflare Tunnel
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          cat >> ~/.ssh/config << EOF
+          Host ${{ secrets.DEPLOY_SSH_HOSTNAME }}
+            HostName ${{ secrets.DEPLOY_SSH_HOSTNAME }}
+            User ${{ secrets.DEPLOY_SSH_USER }}
+            IdentityFile ~/.ssh/id_ed25519
+            ProxyCommand cloudflared access ssh --hostname %h
+            StrictHostKeyChecking no
+          EOF
+
+      - name: Pull new image and restart app
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CLOUDFLARE_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CLOUDFLARE_ACCESS_CLIENT_SECRET }}
+        run: |
+          ssh ${{ secrets.DEPLOY_SSH_USER }}@${{ secrets.DEPLOY_SSH_HOSTNAME }} \
+            "cd ${{ secrets.DEPLOY_COMPOSE_DIR }} && \
+             docker compose pull app && \
+             docker compose up -d app"
