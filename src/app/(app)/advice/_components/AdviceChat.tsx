@@ -272,15 +272,15 @@ export default function AdviceChat({
       </div>
 
       {/* 底部固定エリア */}
-      <div className="shrink-0 border-t px-4 py-3 space-y-2">
-        {/* プリセットチップ */}
-        <div className="flex flex-wrap gap-1.5">
+      <div className="shrink-0 border-t px-4 py-2 space-y-1.5">
+        {/* プリセットチップ - 横スクロール */}
+        <div className="flex gap-1.5 overflow-x-auto pb-0.5 -mx-4 px-4 scrollbar-none">
           {shownQuestions.map((q) => (
             <button
               key={q}
               onClick={() => handlePreset(q)}
               disabled={isPending}
-              className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="shrink-0 text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {q}
             </button>
@@ -293,7 +293,7 @@ export default function AdviceChat({
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="家計についての質問を入力してください"
-            rows={2}
+            rows={1}
             disabled={isPending}
             className="flex-1 resize-none"
           />
@@ -309,7 +309,7 @@ export default function AdviceChat({
             )}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground text-right">
+        <p className="hidden md:block text-xs text-muted-foreground text-right">
           Ctrl+Enter で送信
         </p>
       </div>
