@@ -75,7 +75,7 @@ export async function deleteTransaction(id: number): Promise<void> {
   await prisma.transaction.delete({ where: { id } });
 }
 
-// 同じ description を持つ全明細の種別を一括更新
+// 同じ description を持つ全明細の種別を一括更新（個別固定済みの明細は除外）
 export async function updateTransactionType(
   description: string,
   type: string
@@ -83,8 +83,41 @@ export async function updateTransactionType(
   const session = await auth();
   if (!session?.user) throw new Error("未認証");
   await prisma.transaction.updateMany({
-    where: { description },
+    where: { description, typeIsOverridden: false },
     data: { type },
+  });
+}
+
+// 特定の明細のみ種別を変更し、個別固定フラグを立てる
+export async function updateSingleTransactionType(
+  id: number,
+  type: string
+): Promise<void> {
+  const session = await auth();
+  if (!session?.user) throw new Error("未認証");
+  await prisma.transaction.update({
+    where: { id },
+    data: { type, typeIsOverridden: true },
+  });
+}
+
+// 特定の明細の種別を個別固定モードにする（種別は変更しない）
+export async function setTypeOverride(id: number): Promise<void> {
+  const session = await auth();
+  if (!session?.user) throw new Error("未認証");
+  await prisma.transaction.update({
+    where: { id },
+    data: { typeIsOverridden: true },
+  });
+}
+
+// 種別の個別固定を解除する（以降は一括更新の対象に戻る）
+export async function clearTypeOverride(id: number): Promise<void> {
+  const session = await auth();
+  if (!session?.user) throw new Error("未認証");
+  await prisma.transaction.update({
+    where: { id },
+    data: { typeIsOverridden: false },
   });
 }
 
