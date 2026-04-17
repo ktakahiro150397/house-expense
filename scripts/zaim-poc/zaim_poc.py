@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import sys
 from collections import Counter
 from datetime import datetime, timedelta
@@ -144,11 +143,10 @@ def _update_env_file(env_path: Path, updates: dict[str, str]) -> None:
         lines = env_path.read_text(encoding="utf-8").splitlines(keepends=True)
 
     for key, value in updates.items():
-        pattern = re.compile(rf'^{re.escape(key)}=.*', re.MULTILINE)
         new_line = f'{key}="{value}"'
         found = False
         for i, line in enumerate(lines):
-            if pattern.match(line.rstrip("\n\r")):
+            if line.rstrip("\n\r").startswith(f"{key}="):
                 lines[i] = new_line + "\n"
                 found = True
                 break
@@ -466,19 +464,19 @@ def run_go_nogo_check(
         print("=" * 70)
         print(" 参考: 明細に現れる口座 ID 一覧")
         print("=" * 70)
-        from_ids: set[str] = set()
-        to_ids: set[str] = set()
+        from_account_ids: set[str] = set()
+        to_account_ids: set[str] = set()
         for m in money_list:
             fid = m.get("from_account_id")
             tid = m.get("to_account_id")
             if fid and str(fid) != "0":
-                from_ids.add(str(fid))
+                from_account_ids.add(str(fid))
             if tid and str(tid) != "0":
-                to_ids.add(str(tid))
-        all_ids = from_ids | to_ids
-        print(f"  from_account_id に現れた口座: {sorted(from_ids) if from_ids else '(なし)'}")
-        print(f"  to_account_id   に現れた口座: {sorted(to_ids) if to_ids else '(なし)'}")
-        print(f"  ユニーク口座数: {len(all_ids)}")
+                to_account_ids.add(str(tid))
+        all_account_ids = from_account_ids | to_account_ids
+        print(f"  from_account_id に現れた口座: {sorted(from_account_ids) if from_account_ids else '(なし)'}")
+        print(f"  to_account_id   に現れた口座: {sorted(to_account_ids) if to_account_ids else '(なし)'}")
+        print(f"  ユニーク口座数: {len(all_account_ids)}")
         print()
 
 
