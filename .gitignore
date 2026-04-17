@@ -47,3 +47,7 @@ next-env.d.ts
 docs/sample_csv
 
 public/uploads/
+
+# Python
+__pycache__/
+*.pyc
