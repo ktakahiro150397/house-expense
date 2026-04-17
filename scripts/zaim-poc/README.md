@@ -52,7 +52,7 @@ python zaim_poc.py authorize
 1. 表示される URL をブラウザで開く
 2. Zaim にログインして認可する
 3. リダイレクト先 URL に含まれる `oauth_verifier` の値をコピーして入力
-4. 出力されるアクセストークンを `.env` に記入
+4. アクセストークンが自動的に `.env` に書き込まれる
 
 ### Step 2: データ取得 & Go/No-Go 判定
 

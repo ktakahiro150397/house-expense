@@ -8,16 +8,17 @@ Zaim API PoC スクリプト
 使い方:
   1. pip install -r requirements.txt
   2. .env.example を .env にコピーし、コンシューマ情報を記入
-  3. python zaim_poc.py authorize   ← アクセストークンを取得
-  4. .env にアクセストークンを記入
-  5. python zaim_poc.py fetch        ← データ取得 & Go/No-Go 判定
+  3. python zaim_poc.py authorize   ← アクセストークンを取得 (.env に自動書込み)
+  4. python zaim_poc.py fetch        ← データ取得 & Go/No-Go 判定
 """
 
 from __future__ import annotations
 
 import json
 import os
+import re
 import sys
+from collections import Counter
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -119,15 +120,44 @@ def cmd_authorize() -> None:
     access_token = resp["oauth_token"]
     access_token_secret = resp["oauth_token_secret"]
 
+    # .env に書き込み
+    env_path = Path(__file__).resolve().parent / ".env"
+    _update_env_file(env_path, {
+        "ZAIM_ACCESS_TOKEN": access_token,
+        "ZAIM_ACCESS_TOKEN_SECRET": access_token_secret,
+    })
+
     print()
     print("=" * 60)
-    print(" アクセストークンを取得しました。")
-    print(" 以下を .env に記入してください。")
+    print(" アクセストークンを取得し、.env に書き込みました。")
+    print(" 次のコマンドでデータを取得できます:")
+    print("   python zaim_poc.py fetch")
     print("=" * 60)
     print()
-    print(f'ZAIM_ACCESS_TOKEN="{access_token}"')
-    print(f'ZAIM_ACCESS_TOKEN_SECRET="{access_token_secret}"')
-    print()
+
+
+def _update_env_file(env_path: Path, updates: dict[str, str]) -> None:
+    """既存の .env ファイル内の指定キーを更新する。キーがなければ末尾に追加する。"""
+    if not env_path.exists():
+        lines: list[str] = []
+    else:
+        lines = env_path.read_text(encoding="utf-8").splitlines(keepends=True)
+
+    for key, value in updates.items():
+        pattern = re.compile(rf'^{re.escape(key)}=.*', re.MULTILINE)
+        new_line = f'{key}="{value}"'
+        found = False
+        for i, line in enumerate(lines):
+            if pattern.match(line.rstrip("\n\r")):
+                lines[i] = new_line + "\n"
+                found = True
+                break
+        if not found:
+            if lines and not lines[-1].endswith("\n"):
+                lines.append("\n")
+            lines.append(new_line + "\n")
+
+    env_path.write_text("".join(lines), encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -262,7 +292,7 @@ def run_go_nogo_check(
     checks: list[tuple[str, bool, str]] = []
 
     # --- Check 1: 口座に id があるか ---
-    has_account_id = all("id" in a for a in accounts) if accounts else False
+    has_account_id = bool(accounts) and all("id" in a for a in accounts)
     checks.append((
         "口座 (account) に一意な id が存在する",
         has_account_id,
@@ -270,7 +300,7 @@ def run_go_nogo_check(
     ))
 
     # --- Check 2: 口座に name があるか ---
-    has_account_name = all("name" in a for a in accounts) if accounts else False
+    has_account_name = bool(accounts) and all("name" in a for a in accounts)
     checks.append((
         "口座 (account) に name が存在する",
         has_account_name,
@@ -278,7 +308,7 @@ def run_go_nogo_check(
     ))
 
     # --- Check 3: money に一意 id があるか ---
-    has_money_id = all("id" in m for m in money_list) if money_list else False
+    has_money_id = bool(money_list) and all("id" in m for m in money_list)
     checks.append((
         "明細 (money) に一意な id が存在する",
         has_money_id,
@@ -286,7 +316,7 @@ def run_go_nogo_check(
     ))
 
     # --- Check 4: money に date があるか ---
-    has_money_date = all("date" in m for m in money_list) if money_list else False
+    has_money_date = bool(money_list) and all("date" in m for m in money_list)
     checks.append((
         "明細 (money) に date が存在する",
         has_money_date,
@@ -294,9 +324,9 @@ def run_go_nogo_check(
     ))
 
     # --- Check 5: money に amount があるか ---
-    has_money_amount = all(
+    has_money_amount = bool(money_list) and all(
         "amount" in m or "price" in m for m in money_list
-    ) if money_list else False
+    )
     checks.append((
         "明細 (money) に amount または price が存在する",
         has_money_amount,
@@ -304,7 +334,7 @@ def run_go_nogo_check(
     ))
 
     # --- Check 6: money に mode/type があるか ---
-    has_money_mode = all("mode" in m for m in money_list) if money_list else False
+    has_money_mode = bool(money_list) and all("mode" in m for m in money_list)
     checks.append((
         "明細 (money) に mode (payment/income/transfer) が存在する",
         has_money_mode,
@@ -312,9 +342,9 @@ def run_go_nogo_check(
     ))
 
     # --- Check 7: money に from_account_id / to_account_id があるか ---
-    has_account_ref = all(
+    has_account_ref = bool(money_list) and all(
         "from_account_id" in m or "to_account_id" in m for m in money_list
-    ) if money_list else False
+    )
     checks.append((
         "明細 (money) に from_account_id / to_account_id が存在する",
         has_account_ref,
@@ -323,9 +353,9 @@ def run_go_nogo_check(
 
     # --- Check 8: money に説明文系フィールドがあるか ---
     desc_fields = {"comment", "place", "name"}
-    has_desc = all(
+    has_desc = bool(money_list) and all(
         any(f in m for f in desc_fields) for m in money_list
-    ) if money_list else False
+    )
     checks.append((
         "明細 (money) に comment / place / name のいずれかが存在する",
         has_desc,
@@ -333,9 +363,9 @@ def run_go_nogo_check(
     ))
 
     # --- Check 9: money に created/modified タイムスタンプがあるか ---
-    has_timestamps = all(
+    has_timestamps = bool(money_list) and all(
         "created" in m or "modified" in m for m in money_list
-    ) if money_list else False
+    )
     checks.append((
         "明細 (money) に created / modified タイムスタンプが存在する",
         has_timestamps,
@@ -343,9 +373,9 @@ def run_go_nogo_check(
     ))
 
     # --- Check 10: money に category_id / genre_id があるか ---
-    has_category = all(
+    has_category = bool(money_list) and all(
         "category_id" in m or "genre_id" in m for m in money_list
-    ) if money_list else False
+    )
     checks.append((
         "明細 (money) に category_id / genre_id が存在する",
         has_category,
@@ -425,10 +455,7 @@ def run_go_nogo_check(
         print("=" * 70)
         print(" 参考: 取得明細の mode 別集計")
         print("=" * 70)
-        mode_counts: dict[str, int] = {}
-        for m in money_list:
-            mode = m.get("mode", "(不明)")
-            mode_counts[mode] = mode_counts.get(mode, 0) + 1
+        mode_counts = Counter(m.get("mode", "(不明)") for m in money_list)
         for mode, count in sorted(mode_counts.items()):
             print(f"  {mode}: {count} 件")
         print()
