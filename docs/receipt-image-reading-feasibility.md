@@ -97,7 +97,7 @@ issue の想定は:
 ```
 
 - フィールド名が異なる (`items` → `details`, `totalAmount` → `price_sum`)
-- **`quantity` が消えている**
+- **`quantity` が含まれていない**
   - 現在の `ReceiptItem` には `quantity` がある
   - レシートに `2点`, `3個`, `@98×2` のような表現がある場合、現行の価格推移では数量が重要
   - quantity が無いと、単価推移の精度が落ちる
@@ -126,7 +126,7 @@ issue の想定は:
 
 ### 6. nested object の required が弱い
 
-`details` 配列の各要素には `name` / `price` があるが、各要素側の `required` がない。
+`details` 配列内オブジェクトの schema に、`name` / `price` を必須にする `required` 制約がない。
 
 - Gemini への制約を強めたいなら、`details` の各要素にも `required: ["name", "price"]` を付けたほうが安全
 
