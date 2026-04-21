@@ -126,9 +126,10 @@ issue の想定は:
 
 ### 6. nested object の required が弱い
 
-`details` 配列内オブジェクトの schema に、`name` / `price` を必須にする `required` 制約がない。
+`details` 配列内オブジェクトの schema には、`name` / `price` を必須にする `required` 制約がない。
 
 - Gemini への制約を強めたいなら、`details` の各要素にも `required: ["name", "price"]` を付けたほうが安全
+- もし将来的に `quantity` を schema に戻すなら、`quantity` も必須項目に含めるほうが整合的
 
 ## レシート読み取り後の処理は問題ないか
 
