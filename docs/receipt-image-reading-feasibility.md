@@ -126,7 +126,7 @@ issue の想定は:
 
 ### 6. nested object の required が弱い
 
-`details.items.properties` には `name` / `price` があるが、ネスト側の `required` がない。
+`details` 配列の各要素には `name` / `price` があるが、各要素側の `required` がない。
 
 - Gemini への制約を強めたいなら、`details` の各要素にも `required: ["name", "price"]` を付けたほうが安全
 
