@@ -79,6 +79,7 @@ model Transaction {
   dataSourceId   Int?          @map("data_source_id")
   isShared              Boolean       @default(false) @map("is_shared")
   categoryIsOverridden  Boolean       @default(false) @map("category_is_overridden")
+  typeIsOverridden      Boolean       @default(false) @map("type_is_overridden")
   settlementDate        DateTime?     @map("settlement_date")
   hashKey          String        @unique @map("hash_key")
   receiptImageUrl  String?       @map("receipt_image_url")

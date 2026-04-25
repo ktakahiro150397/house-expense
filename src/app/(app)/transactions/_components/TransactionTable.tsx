@@ -36,6 +36,9 @@ import {
   toggleTransactionShared,
   deleteTransaction,
   updateTransactionType,
+  updateSingleTransactionType,
+  setTypeOverride,
+  clearTypeOverride,
 } from "@/lib/actions/transactions";
 
 type TransactionWithCategory = {
@@ -46,6 +49,7 @@ type TransactionWithCategory = {
   type: string;
   isShared: boolean;
   categoryIsOverridden: boolean;
+  typeIsOverridden: boolean;
   receiptImageUrl: string | null;
   category: { id: number; name: string } | null;
   dataSource: { id: number; name: string } | null;
@@ -71,7 +75,8 @@ function categorySelectClass(isOverridden: boolean, hasCategory: boolean): strin
   return "";
 }
 
-function typeSelectClass(type: string): string {
+function typeSelectClass(type: string, isOverridden: boolean): string {
+  if (isOverridden) return "border-orange-500";
   if (type === "expense") return "border-red-300";
   if (type === "income") return "border-green-300";
   if (type === "transfer") return "border-slate-300";
@@ -93,6 +98,9 @@ export default function TransactionTable({ transactions, categories }: Props) {
         | { type: "shared"; id: number; isShared: boolean }
         | { type: "delete"; id: number }
         | { type: "transactionType"; description: string; txType: string }
+        | { type: "transactionTypeSingle"; id: number; txType: string }
+        | { type: "setTypeOverride"; id: number }
+        | { type: "clearTypeOverride"; id: number }
     ) => {
       if (update.type === "delete") {
         return state.filter((t) => t.id !== update.id);
@@ -126,8 +134,20 @@ export default function TransactionTable({ transactions, categories }: Props) {
           return { ...t, isShared: update.isShared };
         }
         if (update.type === "transactionType") {
-          if (t.description !== update.description) return t;
+          if (t.description !== update.description || t.typeIsOverridden) return t;
           return { ...t, type: update.txType };
+        }
+        if (update.type === "transactionTypeSingle") {
+          if (t.id !== update.id) return t;
+          return { ...t, type: update.txType, typeIsOverridden: true };
+        }
+        if (update.type === "setTypeOverride") {
+          if (t.id !== update.id) return t;
+          return { ...t, typeIsOverridden: true };
+        }
+        if (update.type === "clearTypeOverride") {
+          if (t.id !== update.id) return t;
+          return { ...t, typeIsOverridden: false };
         }
         return t;
       });
@@ -172,11 +192,34 @@ export default function TransactionTable({ transactions, categories }: Props) {
     });
   }
 
-  // 同一摘要の全明細の種別を一括更新
-  function handleTypeChange(description: string, txType: string) {
+  // 同一摘要の全明細の種別を一括更新（固定済みは除外）、または固定済みなら個別更新
+  function handleTypeChange(id: number, description: string, txType: string, isOverridden: boolean) {
     startTransition(async () => {
-      updateOptimistic({ type: "transactionType", description, txType });
-      await updateTransactionType(description, txType);
+      if (isOverridden) {
+        updateOptimistic({ type: "transactionTypeSingle", id, txType });
+        await updateSingleTransactionType(id, txType);
+      } else {
+        updateOptimistic({ type: "transactionType", description, txType });
+        await updateTransactionType(description, txType);
+      }
+      router.refresh();
+    });
+  }
+
+  // 種別固定モードをオン（種別は変えず固定フラグだけ立てる）
+  function handleSetTypeOverride(id: number) {
+    startTransition(async () => {
+      updateOptimistic({ type: "setTypeOverride", id });
+      await setTypeOverride(id);
+      router.refresh();
+    });
+  }
+
+  // 種別固定を解除（以降は一括更新の対象に戻る）
+  function handleClearTypeOverride(id: number) {
+    startTransition(async () => {
+      updateOptimistic({ type: "clearTypeOverride", id });
+      await clearTypeOverride(id);
       router.refresh();
     });
   }
@@ -218,19 +261,44 @@ export default function TransactionTable({ transactions, categories }: Props) {
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
                   {formatDate(t.usageDate)}
                 </span>
-                <Select
-                  value={t.type}
-                  onValueChange={(val) => handleTypeChange(t.description, val)}
-                >
-                  <SelectTrigger className={`h-7 w-20 text-xs shrink-0 px-2 ${typeSelectClass(t.type)}`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="expense">支出</SelectItem>
-                    <SelectItem value="income">収入</SelectItem>
-                    <SelectItem value="transfer">振替</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center gap-1 group shrink-0">
+                  <Select
+                    value={t.type}
+                    onValueChange={(val) => handleTypeChange(t.id, t.description, val, t.typeIsOverridden)}
+                  >
+                    <SelectTrigger className={`h-7 w-20 text-xs px-2 ${typeSelectClass(t.type, t.typeIsOverridden)}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="expense">支出</SelectItem>
+                      <SelectItem value="income">収入</SelectItem>
+                      <SelectItem value="transfer">振替</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <button
+                    onClick={() =>
+                      t.typeIsOverridden
+                        ? handleClearTypeOverride(t.id)
+                        : handleSetTypeOverride(t.id)
+                    }
+                    className={`p-1 rounded transition-opacity hover:bg-muted ${
+                      t.typeIsOverridden
+                        ? "opacity-100"
+                        : "opacity-0 group-hover:opacity-60"
+                    }`}
+                    title={
+                      t.typeIsOverridden
+                        ? "種別固定を解除（一括更新の対象に戻す）"
+                        : "この明細の種別を固定（個別変更モード）"
+                    }
+                  >
+                    {t.typeIsOverridden ? (
+                      <Lock className="size-3.5 text-orange-500" />
+                    ) : (
+                      <LockOpen className="size-3.5 text-muted-foreground" />
+                    )}
+                  </button>
+                </div>
               </div>
               <span className="font-mono font-semibold whitespace-nowrap text-sm shrink-0">
                 {t.type === "expense" ? (
@@ -379,19 +447,44 @@ export default function TransactionTable({ transactions, categories }: Props) {
                   {t.dataSource?.name ?? "—"}
                 </TableCell>
                 <TableCell>
-                  <Select
-                    value={t.type}
-                    onValueChange={(val) => handleTypeChange(t.description, val)}
-                  >
-                    <SelectTrigger className={`h-8 w-24 text-sm ${typeSelectClass(t.type)}`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="expense">支出</SelectItem>
-                      <SelectItem value="income">収入</SelectItem>
-                      <SelectItem value="transfer">振替</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-1 group">
+                    <Select
+                      value={t.type}
+                      onValueChange={(val) => handleTypeChange(t.id, t.description, val, t.typeIsOverridden)}
+                    >
+                      <SelectTrigger className={`h-8 w-24 text-sm ${typeSelectClass(t.type, t.typeIsOverridden)}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="expense">支出</SelectItem>
+                        <SelectItem value="income">収入</SelectItem>
+                        <SelectItem value="transfer">振替</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <button
+                      onClick={() =>
+                        t.typeIsOverridden
+                          ? handleClearTypeOverride(t.id)
+                          : handleSetTypeOverride(t.id)
+                      }
+                      className={`p-1 rounded transition-opacity hover:bg-muted ${
+                        t.typeIsOverridden
+                          ? "opacity-100"
+                          : "opacity-0 group-hover:opacity-60"
+                      }`}
+                      title={
+                        t.typeIsOverridden
+                          ? "種別固定を解除（一括更新の対象に戻す）"
+                          : "この明細の種別を固定（個別変更モード）"
+                      }
+                    >
+                      {t.typeIsOverridden ? (
+                        <Lock className="size-3.5 text-orange-500" />
+                      ) : (
+                        <LockOpen className="size-3.5 text-muted-foreground" />
+                      )}
+                    </button>
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1 group">

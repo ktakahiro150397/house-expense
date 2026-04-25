@@ -90,6 +90,7 @@ export default async function TransactionsPage({
         type: true,
         isShared: true,
         categoryIsOverridden: true,
+        typeIsOverridden: true,
         receiptImageUrl: true,
         category: { select: { id: true, name: true } },
         dataSource: { select: { id: true, name: true } },
