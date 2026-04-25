@@ -37,6 +37,7 @@ CALLBACK_URI = "http://127.0.0.1:5000/callback"
 # ユーティリティ
 # ---------------------------------------------------------------------------
 
+
 def load_env() -> None:
     """スクリプトディレクトリの .env を読み込む"""
     env_path = Path(__file__).resolve().parent / ".env"
@@ -77,6 +78,7 @@ def pretty(data: object) -> str:
 # サブコマンド: authorize
 # ---------------------------------------------------------------------------
 
+
 def cmd_authorize() -> None:
     """OAuth 1.0a フローでアクセストークンを取得する"""
     load_env()
@@ -84,7 +86,9 @@ def cmd_authorize() -> None:
     consumer_secret = get_env("ZAIM_CONSUMER_SECRET")
 
     # 1. Request Token
-    session = OAuth1Session(consumer_key, client_secret=consumer_secret, callback_uri=CALLBACK_URI)
+    session = OAuth1Session(
+        consumer_key, client_secret=consumer_secret, callback_uri=CALLBACK_URI
+    )
     resp = session.fetch_request_token(REQUEST_TOKEN_URL)
     request_token = resp["oauth_token"]
     request_token_secret = resp["oauth_token_secret"]
@@ -121,10 +125,13 @@ def cmd_authorize() -> None:
 
     # .env に書き込み
     env_path = Path(__file__).resolve().parent / ".env"
-    _update_env_file(env_path, {
-        "ZAIM_ACCESS_TOKEN": access_token,
-        "ZAIM_ACCESS_TOKEN_SECRET": access_token_secret,
-    })
+    _update_env_file(
+        env_path,
+        {
+            "ZAIM_ACCESS_TOKEN": access_token,
+            "ZAIM_ACCESS_TOKEN_SECRET": access_token_secret,
+        },
+    )
 
     print()
     print("=" * 60)
@@ -162,6 +169,7 @@ def _update_env_file(env_path: Path, updates: dict[str, str]) -> None:
 # サブコマンド: fetch
 # ---------------------------------------------------------------------------
 
+
 def cmd_fetch() -> None:
     """Zaim API からデータを取得し、Go/No-Go 判定に必要な情報を出力する"""
     load_env()
@@ -170,7 +178,9 @@ def cmd_fetch() -> None:
     access_token = get_env("ZAIM_ACCESS_TOKEN")
     access_token_secret = get_env("ZAIM_ACCESS_TOKEN_SECRET")
 
-    session = make_session(consumer_key, consumer_secret, access_token, access_token_secret)
+    session = make_session(
+        consumer_key, consumer_secret, access_token, access_token_secret
+    )
 
     print()
     print("=" * 70)
@@ -241,7 +251,7 @@ def cmd_fetch() -> None:
     print("[5/5] 明細取得 (GET /home/money)")
     print("-" * 70)
 
-    end_date = datetime.now()
+    end_date = datetime(2026, 4, 16)
     start_date = end_date - timedelta(days=60)
     params = {
         "start_date": start_date.strftime("%Y-%m-%d"),
@@ -291,94 +301,114 @@ def run_go_nogo_check(
 
     # --- Check 1: 口座に id があるか ---
     has_account_id = bool(accounts) and all("id" in a for a in accounts)
-    checks.append((
-        "口座 (account) に一意な id が存在する",
-        has_account_id,
-        "DataSource との 1:1 マッピングに必要",
-    ))
+    checks.append(
+        (
+            "口座 (account) に一意な id が存在する",
+            has_account_id,
+            "DataSource との 1:1 マッピングに必要",
+        )
+    )
 
     # --- Check 2: 口座に name があるか ---
     has_account_name = bool(accounts) and all("name" in a for a in accounts)
-    checks.append((
-        "口座 (account) に name が存在する",
-        has_account_name,
-        "DataSource.name への対応に必要",
-    ))
+    checks.append(
+        (
+            "口座 (account) に name が存在する",
+            has_account_name,
+            "DataSource.name への対応に必要",
+        )
+    )
 
     # --- Check 3: money に一意 id があるか ---
     has_money_id = bool(money_list) and all("id" in m for m in money_list)
-    checks.append((
-        "明細 (money) に一意な id が存在する",
-        has_money_id,
-        "externalTransactionId として重複/更新検知に必要",
-    ))
+    checks.append(
+        (
+            "明細 (money) に一意な id が存在する",
+            has_money_id,
+            "externalTransactionId として重複/更新検知に必要",
+        )
+    )
 
     # --- Check 4: money に date があるか ---
     has_money_date = bool(money_list) and all("date" in m for m in money_list)
-    checks.append((
-        "明細 (money) に date が存在する",
-        has_money_date,
-        "Transaction.usageDate へのマッピングに必要",
-    ))
+    checks.append(
+        (
+            "明細 (money) に date が存在する",
+            has_money_date,
+            "Transaction.usageDate へのマッピングに必要",
+        )
+    )
 
     # --- Check 5: money に amount があるか ---
     has_money_amount = bool(money_list) and all(
         "amount" in m or "price" in m for m in money_list
     )
-    checks.append((
-        "明細 (money) に amount または price が存在する",
-        has_money_amount,
-        "Transaction.amount へのマッピングに必要",
-    ))
+    checks.append(
+        (
+            "明細 (money) に amount または price が存在する",
+            has_money_amount,
+            "Transaction.amount へのマッピングに必要",
+        )
+    )
 
     # --- Check 6: money に mode/type があるか ---
     has_money_mode = bool(money_list) and all("mode" in m for m in money_list)
-    checks.append((
-        "明細 (money) に mode (payment/income/transfer) が存在する",
-        has_money_mode,
-        "Transaction.type へのマッピングに必要",
-    ))
+    checks.append(
+        (
+            "明細 (money) に mode (payment/income/transfer) が存在する",
+            has_money_mode,
+            "Transaction.type へのマッピングに必要",
+        )
+    )
 
     # --- Check 7: money に from_account_id / to_account_id があるか ---
     has_account_ref = bool(money_list) and all(
         "from_account_id" in m or "to_account_id" in m for m in money_list
     )
-    checks.append((
-        "明細 (money) に from_account_id / to_account_id が存在する",
-        has_account_ref,
-        "Transaction.dataSourceId (口座紐付け) に必要",
-    ))
+    checks.append(
+        (
+            "明細 (money) に from_account_id / to_account_id が存在する",
+            has_account_ref,
+            "Transaction.dataSourceId (口座紐付け) に必要",
+        )
+    )
 
     # --- Check 8: money に説明文系フィールドがあるか ---
     desc_fields = {"comment", "place", "name"}
     has_desc = bool(money_list) and all(
         any(f in m for f in desc_fields) for m in money_list
     )
-    checks.append((
-        "明細 (money) に comment / place / name のいずれかが存在する",
-        has_desc,
-        "Transaction.description へのマッピングに必要",
-    ))
+    checks.append(
+        (
+            "明細 (money) に comment / place / name のいずれかが存在する",
+            has_desc,
+            "Transaction.description へのマッピングに必要",
+        )
+    )
 
     # --- Check 9: money に created/modified タイムスタンプがあるか ---
     has_timestamps = bool(money_list) and all(
         "created" in m or "modified" in m for m in money_list
     )
-    checks.append((
-        "明細 (money) に created / modified タイムスタンプが存在する",
-        has_timestamps,
-        "更新検知 (sourceUpdatedAt 相当) に必要。なくても hashKey で代替は可能",
-    ))
+    checks.append(
+        (
+            "明細 (money) に created / modified タイムスタンプが存在する",
+            has_timestamps,
+            "更新検知 (sourceUpdatedAt 相当) に必要。なくても hashKey で代替は可能",
+        )
+    )
 
     # --- Check 10: money に category_id / genre_id があるか ---
     has_category = bool(money_list) and all(
         "category_id" in m or "genre_id" in m for m in money_list
     )
-    checks.append((
-        "明細 (money) に category_id / genre_id が存在する",
-        has_category,
-        "カテゴリ自動マッピングに必要 (なくても運用可能)",
-    ))
+    checks.append(
+        (
+            "明細 (money) に category_id / genre_id が存在する",
+            has_category,
+            "カテゴリ自動マッピングに必要 (なくても運用可能)",
+        )
+    )
 
     # --- 結果出力 ---
     all_pass = True
@@ -391,7 +421,8 @@ def run_go_nogo_check(
             all_pass = False
             # Check 1, 3, 4, 5, 6 は致命的
             if any(
-                label.startswith(x) for x in [
+                label.startswith(x)
+                for x in [
                     "口座 (account) に一意な id",
                     "明細 (money) に一意な id",
                     "明細 (money) に date",
@@ -430,7 +461,9 @@ def run_go_nogo_check(
     print()
     print("  Zaim フィールド             → house-expense カラム")
     print("  ─────────────────────────────────────────────────")
-    print("  money.id                    → Transaction.externalTransactionId (新規追加)")
+    print(
+        "  money.id                    → Transaction.externalTransactionId (新規追加)"
+    )
     print("  money.date                  → Transaction.usageDate")
     print("  money.amount / money.price  → Transaction.amount")
     print("  money.mode                  → Transaction.type")
@@ -474,8 +507,12 @@ def run_go_nogo_check(
             if tid and str(tid) != "0":
                 to_account_ids.add(str(tid))
         all_account_ids = from_account_ids | to_account_ids
-        print(f"  from_account_id に現れた口座: {sorted(from_account_ids) if from_account_ids else '(なし)'}")
-        print(f"  to_account_id   に現れた口座: {sorted(to_account_ids) if to_account_ids else '(なし)'}")
+        print(
+            f"  from_account_id に現れた口座: {sorted(from_account_ids) if from_account_ids else '(なし)'}"
+        )
+        print(
+            f"  to_account_id   に現れた口座: {sorted(to_account_ids) if to_account_ids else '(なし)'}"
+        )
         print(f"  ユニーク口座数: {len(all_account_ids)}")
         print()
 
@@ -483,6 +520,7 @@ def run_go_nogo_check(
 # ---------------------------------------------------------------------------
 # エントリポイント
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     if len(sys.argv) < 2 or sys.argv[1] not in ("authorize", "fetch"):

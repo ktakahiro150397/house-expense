@@ -27,7 +27,9 @@
       "Bash(test:*)",
       "Bash(docker ps:*)",
       "Bash(gh pr:*)",
-      "Bash(gh issue:*)"
+      "Bash(gh issue:*)",
+      "Bash(xargs sh:*)",
+      "Bash(npx:*)"
     ]
   }
 }
